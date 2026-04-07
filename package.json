@@ -1,0 +1,17 @@
+{
+  "name": "accurate-playwright-export",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright automation script for Accurate report export.",
+  "main": "src/accurate-export.js",
+  "scripts": {
+    "start": "node src/accurate-export.js",
+    "check": "node --check src/accurate-export.js",
+    "doctor": "node scripts/doctor.js",
+    "install:browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "playwright": "^1.55.0"
+  }
+}
