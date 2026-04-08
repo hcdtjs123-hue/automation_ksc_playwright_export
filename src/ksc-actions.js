@@ -231,6 +231,27 @@ async function clickShow(page) {
   await btn.click({ force: true });
 }
 
+async function clickModifyInput(page) {
+  console.log('Modify Input');
+
+  await waitOverlayGone(page);
+
+  const modifyButtonLocators = [
+    page.locator('button[name="btnModifyInput"]').first(),
+    page.locator('button[data-bind*="modifyInput"]').first(),
+  ];
+
+  const modifyResult = await clickFirstVisibleLocator(page, modifyButtonLocators, 'Modify Input button');
+
+  if (!modifyResult.ok) {
+    throw new Error('Could not click Modify Input button');
+  }
+
+  await safeWait(page, 1200);
+  await page.locator('input[name="startDate"]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('input[name="endDate"]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
+}
+
 async function waitReportReady(page) {
   await waitOverlayGone(page);
   await safeWait(page, 2000);
@@ -601,6 +622,7 @@ function moveDownloadedFile(sourcePath, targetDir, baseName) {
 
 module.exports = {
   clickExportThenExcel,
+  clickModifyInput,
   clickShow,
   clickSidebar,
   clickTile,

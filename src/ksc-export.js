@@ -1,9 +1,10 @@
 const { execFileSync } = require('child_process');
 const { chromium, firefox } = require('playwright');
 const { CONFIG, ensureDir, logStartupConfig, validateRuntimeConfig } = require('./config');
-const { getConfiguredDateJob, getFileLabelForDateRange } = require('./date');
+const { getConfiguredExportJobs } = require('./date');
 const {
   clickExportThenExcel,
+  clickModifyInput,
   clickShow,
   fillDate,
   fillLogin,
@@ -48,8 +49,8 @@ const {
     ctx = await browserType.launchPersistentContext(CONFIG.userDataDir, launchOptions);
 
     const page = ctx.pages().find((currentPage) => !currentPage.isClosed()) || (await ctx.newPage());
-    const job = getConfiguredDateJob();
-    console.log('Date job =', job);
+    const exportJobs = getConfiguredExportJobs();
+    console.log('Export jobs =', exportJobs);
 
     await page.goto(CONFIG.accurateUrl, { waitUntil: 'domcontentloaded' });
     await safeWait(page, 3000);
@@ -64,21 +65,27 @@ const {
 
     app = await openProfitLossReport(ctx, app);
 
-    await fillDate(app, job.startDate, job.endDate);
-    await clickShow(app);
-    await waitOverlayGone(app);
-    await waitReportReady(app);
-    await safeWait(app, 3000);
+    for (let index = 0; index < exportJobs.length; index += 1) {
+      const job = exportJobs[index];
+      console.log(`Running export ${index + 1}/${exportJobs.length}:`, job);
 
-    const downloadedFilePath = await clickExportThenExcel(
-      app,
-      getFileLabelForDateRange(job.startDate, job.endDate)
-    );
+      if (index > 0) {
+        await clickModifyInput(app);
+      }
 
-    await waitOverlayGone(app);
-    await safeWait(app, 1500);
+      await fillDate(app, job.startDate, job.endDate);
+      await clickShow(app);
+      await waitOverlayGone(app);
+      await waitReportReady(app);
+      await safeWait(app, 3000);
 
-    console.log('Downloaded file =', downloadedFilePath);
+      const downloadedFilePath = await clickExportThenExcel(app, job.fileLabel);
+
+      await waitOverlayGone(app);
+      await safeWait(app, 1500);
+
+      console.log(`Downloaded file ${index + 1}:`, downloadedFilePath);
+    }
     console.log('DONE');
   } catch (error) {
     exitCode = 1;

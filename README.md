@@ -38,8 +38,12 @@ PLAYWRIGHT_BROWSER_CHANNEL=chrome
 PLAYWRIGHT_BROWSER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 PLAYWRIGHT_CHROME_PROFILE_DIRECTORY=Default
 PLAYWRIGHT_USER_DATA_DIR=./output/playwright/ksc_user-data
-ACCURATE_START_DATE=01/04/2026
-ACCURATE_END_DATE=07/04/2026
+DAILY_ACCURATE_START_DATE=01/04/2026
+DAILY_ACCURATE_END_DATE=07/04/2026
+MTD_ACCURATE_START_DATE=01/04/2026
+MTD_ACCURATE_END_DATE=07/04/2026
+YTD_ACCURATE_START_DATE=01/01/2026
+YTD_ACCURATE_END_DATE=07/04/2026
 ```
 
 5. Install browser Chromium untuk Playwright:
@@ -63,12 +67,14 @@ pnpm run doctor
 ## Notes
 
 - Download hasil export sekarang default disimpan di `output/playwright/ksc_downloads`.
-- `ACCURATE_START_DATE` dan `ACCURATE_END_DATE` wajib memakai format `DD/MM/YYYY`.
-- Flow sekarang hanya satu kali jalan dari awal sampai akhir: login, buka report, isi tanggal, export, lalu program ditutup.
-- Nama file download mengikuti tanggal report:
-  `ksc_YYYY-MM-DD.xlsx`
-- Jika `ACCURATE_START_DATE` dan `ACCURATE_END_DATE` berbeda, nama file menjadi:
-  `ksc_YYYY-MM-DD_to_YYYY-MM-DD.xlsx`
+- `DAILY_ACCURATE_START_DATE`, `DAILY_ACCURATE_END_DATE`, `MTD_ACCURATE_START_DATE`, `MTD_ACCURATE_END_DATE`, `YTD_ACCURATE_START_DATE`, dan `YTD_ACCURATE_END_DATE` wajib memakai format `DD/MM/YYYY`.
+- Flow sekarang berjalan 3 tahap berurutan dalam satu run: export awal, klik `Modify Input` untuk MTD, export lagi, klik `Modify Input` untuk YTD, export lagi, lalu program ditutup.
+- Nama file download tahap pertama:
+  `ksc_daily_YYYY-MM-DD.xlsx`
+- Jika range tanggal berbeda, nama file tahap pertama menjadi:
+  `ksc_daily_YYYY-MM-DD_to_YYYY-MM-DD.xlsx`
+- Tahap kedua dan ketiga memakai prefix:
+  `ksc_mtd_...` dan `ksc_ytd_...`
 - Jika file dengan nama yang sama sudah ada, script otomatis menambah suffix `_2`, `_3`, dan seterusnya.
 - Browser sekarang memakai persistent profile di `output/playwright/ksc_user-data`, jadi login/session bisa dipakai ulang antar-run.
 - Browser utama project sekarang diset ke Chromium Playwright dengan `channel: "chrome"`. Jika perlu, Anda masih bisa override lewat `PLAYWRIGHT_BROWSER_EXECUTABLE_PATH`.
