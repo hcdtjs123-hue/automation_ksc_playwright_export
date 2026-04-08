@@ -20,6 +20,7 @@ const {
   let exitCode = 0;
 
   try {
+    // Validasi env dan siapkan direktori output/profile sebelum browser dibuka.
     validateRuntimeConfig();
     ensureDir(CONFIG.outputDir);
     ensureDir(CONFIG.userDataDir);
@@ -27,6 +28,7 @@ const {
     logStartupConfig();
 
     const browserType = getBrowserType(CONFIG.browserName);
+    // Satu persistent context dipakai untuk seluruh flow agar session/login tetap konsisten.
     const launchOptions = {
       headless: CONFIG.headless,
       slowMo: CONFIG.slowMo,
@@ -49,6 +51,7 @@ const {
     ctx = await browserType.launchPersistentContext(CONFIG.userDataDir, launchOptions);
 
     const page = ctx.pages().find((currentPage) => !currentPage.isClosed()) || (await ctx.newPage());
+    // Urutan job selalu: daily -> mtd -> ytd.
     const exportJobs = getConfiguredExportJobs();
     console.log('Export jobs =', exportJobs);
 
@@ -63,12 +66,14 @@ const {
     let app = await openCompany(page, ctx);
     console.log('Running single report flow...');
 
+    // Masuk ke halaman Profit/Loss sekali, lalu ulangi export dengan parameter tanggal berbeda.
     app = await openProfitLossReport(ctx, app);
 
     for (let index = 0; index < exportJobs.length; index += 1) {
       const job = exportJobs[index];
       console.log(`Running export ${index + 1}/${exportJobs.length}:`, job);
 
+      // Export kedua dan ketiga harus membuka kembali dialog parameter lewat Modify Input.
       if (index > 0) {
         await clickModifyInput(app);
       }
@@ -114,6 +119,7 @@ function getBrowserType(browserName) {
 }
 
 function assertChromeProfileIsAvailable() {
+  // Cegah reuse profile Chrome asli saat masih dipakai proses lain.
   const isChromeProfileMode =
     CONFIG.browserName === 'chromium' &&
     CONFIG.browserExecutablePath &&

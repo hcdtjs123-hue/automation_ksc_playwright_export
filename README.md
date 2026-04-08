@@ -64,26 +64,25 @@ pnpm start
 pnpm run doctor
 ```
 
-## Notes
+## Urutan Baca
 
-- Download hasil export sekarang default disimpan di `output/playwright/ksc_downloads`.
-- `DAILY_ACCURATE_START_DATE`, `DAILY_ACCURATE_END_DATE`, `MTD_ACCURATE_START_DATE`, `MTD_ACCURATE_END_DATE`, `YTD_ACCURATE_START_DATE`, dan `YTD_ACCURATE_END_DATE` wajib memakai format `DD/MM/YYYY`.
-- Flow sekarang berjalan 3 tahap berurutan dalam satu run: export awal, klik `Modify Input` untuk MTD, export lagi, klik `Modify Input` untuk YTD, export lagi, lalu program ditutup.
-- Nama file download tahap pertama:
-  `ksc_daily_YYYY-MM-DD.xlsx`
-- Jika range tanggal berbeda, nama file tahap pertama menjadi:
-  `ksc_daily_YYYY-MM-DD_to_YYYY-MM-DD.xlsx`
-- Tahap kedua dan ketiga memakai prefix:
-  `ksc_mtd_...` dan `ksc_ytd_...`
-- Jika file dengan nama yang sama sudah ada, script otomatis menambah suffix `_2`, `_3`, dan seterusnya.
-- Browser sekarang memakai persistent profile di `output/playwright/ksc_user-data`, jadi login/session bisa dipakai ulang antar-run.
-- Browser utama project sekarang diset ke Chromium Playwright dengan `channel: "chrome"`. Jika perlu, Anda masih bisa override lewat `PLAYWRIGHT_BROWSER_EXECUTABLE_PATH`.
-- Jika ingin benar-benar memakai login Chrome laptop Anda, arahkan `PLAYWRIGHT_USER_DATA_DIR` ke user data Chrome asli dan set `PLAYWRIGHT_CHROME_PROFILE_DIRECTORY`. Chrome biasa sebaiknya ditutup dulu sebelum script dijalankan agar profile tidak terkunci.
-- Project sekarang juga akan melakukan check awal dan menghentikan proses lebih cepat jika profile Chrome harian masih sedang dipakai proses Chrome lain.
-- Script ini default menjalankan browser dengan `headless: false`.
-- Mode browser dan `slowMo` sekarang bisa diatur dari `.env` lewat `PLAYWRIGHT_HEADLESS` dan `PLAYWRIGHT_SLOW_MO`.
-- Nama company default adalah `KSC`, tapi sekarang bisa diubah lewat `ACCURATE_COMPANY_NAME`.
-- Beberapa label UI juga bisa dioverride dari `.env` kalau teks menu di akun Anda berbeda. Flow saat ini: `Reports -> Report List -> Financial -> Profit/Loss (Standard)`.
-- Jika export memunculkan native `Save As` dialog, script akan mencoba menjalankan `scripts/windows/ksc-save-export.ahk`, tetapi fallback ini hanya untuk Windows.
-- Default path AutoHotkey memakai path Windows. Override lewat `AHK_EXE_PATH` jika perlu.
-- Di Linux/macOS, jika tidak ada event download dari Playwright dan yang muncul adalah native `Save As` dialog, file tidak bisa disimpan lewat fallback AutoHotkey ini.
+1. `src/ksc-export.js`
+   File utama untuk melihat alur penuh: buka browser, login, buka report, export `daily`, buka `Modify Input`, export `mtd`, buka `Modify Input`, export `ytd`, lalu close browser.
+
+2. `src/date.js`
+   Tempat semua range tanggal dibentuk dari env `DAILY_ACCURATE_*`, `MTD_ACCURATE_*`, dan `YTD_ACCURATE_*`, termasuk label nama file download.
+
+3. `src/ksc-actions.js`
+   Kumpulan aksi browser spesifik Accurate seperti login, pilih company, buka report, isi tanggal, klik `Show`, klik `Modify Input`, dan export Excel.
+
+4. `src/playwright-helpers.js`
+   Helper generik Playwright seperti klik aman, pencarian page aktif, dan tunggu overlay hilang.
+
+5. `src/config.js`
+   Default konfigurasi runtime, path output/profile, browser, dan label UI yang bisa dioverride dari `.env`.
+
+6. `.env`
+   Sumber input runtime yang benar-benar dipakai saat script dijalankan.
+
+7. `scripts/doctor.js`
+   Checker cepat untuk memastikan semua env penting dan path runtime sudah siap sebelum run.
