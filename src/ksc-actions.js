@@ -1,7 +1,8 @@
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execFile } = require('child_process');
-const { CONFIG, ensureDir, requireConfigValue, requireEnv } = require('./config');
+const { CONFIG, ensureDir, requireEnv } = require('./config');
 const {
   clickFirstVisibleLocator,
   escapeRegExp,
@@ -252,11 +253,30 @@ async function waitReportReady(page) {
     .catch(() => {});
 }
 
+async function openProfitLossReport(ctx, preferredPage) {
+  let app = await resolveWorkspacePage(ctx, preferredPage);
+
+  await clickSidebar(app, CONFIG.sidebarLabel);
+  app = await clickTile(ctx, app, CONFIG.reportListLabel);
+  app = await clickTile(ctx, app, CONFIG.financialLabel);
+  app = await clickTile(ctx, app, CONFIG.profitLossLabel);
+
+  return getUsablePage(ctx, app);
+}
+
 async function clickExportThenExcel(page, fileLabel = '') {
   console.log('Export -> Excel');
 
   await waitOverlayGone(page);
   await safeWait(page, 1500);
+
+  const fallbackDownloadsDir = path.join(os.homedir(), 'Downloads');
+  const downloadsDir = CONFIG.outputDir || fallbackDownloadsDir;
+  ensureDir(downloadsDir);
+  const downloadWatch = createDownloadWatch([downloadsDir, fallbackDownloadsDir]);
+
+  const normalizedLabel = String(fileLabel || '').trim().replace(/[^\w.-]+/g, '_');
+  const baseName = normalizedLabel ? `ksc_${normalizedLabel}` : `ksc_${Date.now()}`;
 
   const exportLocators = [
     page.locator('button.dropdown-toggle[name="btnExport"]'),
@@ -383,27 +403,79 @@ async function clickExportThenExcel(page, fileLabel = '') {
   }
 
   if (!download) {
+    const browserManagedFile = await waitForDownloadedFile(downloadWatch, 30000);
+    if (browserManagedFile) {
+      const movedFilePath = moveDownloadedFile(browserManagedFile, downloadsDir, baseName);
+      console.log('Saved browser-managed download:', movedFilePath);
+      return movedFilePath;
+    }
+
     console.log('No Playwright download event. Possibly native Save dialog.');
     await runAutoHotkeySaveDialog();
+
+    const nativeSavedFile = await waitForDownloadedFile(downloadWatch, 30000);
+    if (nativeSavedFile) {
+      const movedFilePath = moveDownloadedFile(nativeSavedFile, downloadsDir, baseName);
+      console.log('Saved native download:', movedFilePath);
+      return movedFilePath;
+    }
+
     return null;
   }
-
-  const fallbackDownloadsDir = path.join(os.homedir(), 'Downloads');
-  const downloadsDir = CONFIG.outputDir || fallbackDownloadsDir;
-  ensureDir(downloadsDir);
 
   let suggestedFilename = '';
   try {
     suggestedFilename = download.suggestedFilename() || '';
   } catch {}
   const ext = path.extname(suggestedFilename) || '.xls';
-  const normalizedLabel = String(fileLabel || '').trim().replace(/[^\w.-]+/g, '_');
-  const baseName = normalizedLabel ? `accurate_${normalizedLabel}` : `accurate_${Date.now()}`;
   const filePath = getUniqueFilePath(downloadsDir, baseName, ext);
 
   await download.saveAs(filePath);
   console.log('Saved:', filePath);
   return filePath;
+}
+
+async function resolveWorkspacePage(ctx, preferredPage) {
+  const candidates = [];
+
+  if (preferredPage && !preferredPage.isClosed()) {
+    candidates.push(preferredPage);
+  }
+
+  for (const page of getLivePages(ctx).slice().reverse()) {
+    if (preferredPage && page === preferredPage) continue;
+    candidates.push(page);
+  }
+
+  const importantLabels = [
+    CONFIG.sidebarLabel,
+    CONFIG.reportListLabel,
+    CONFIG.financialLabel,
+    CONFIG.profitLossLabel,
+  ];
+
+  for (const page of candidates) {
+    for (const label of importantLabels) {
+      const visible = await page
+        .getByText(label, { exact: false })
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (visible) {
+        return page;
+      }
+    }
+  }
+
+  for (const label of importantLabels) {
+    const matchedPage = await findPageWithText(ctx, label, 2000);
+    if (matchedPage) {
+      return matchedPage;
+    }
+  }
+
+  return getUsablePage(ctx, preferredPage);
 }
 
 function getUniqueFilePath(dirPath, baseName, ext) {
@@ -418,6 +490,115 @@ function getUniqueFilePath(dirPath, baseName, ext) {
   return candidate;
 }
 
+function createDownloadWatch(dirPaths) {
+  const snapshots = new Map();
+
+  for (const dirPath of dirPaths) {
+    if (!dirPath) continue;
+    ensureDir(dirPath);
+    snapshots.set(dirPath, new Set(getDirectoryFileNames(dirPath)));
+  }
+
+  return {
+    startedAt: Date.now(),
+    snapshots,
+  };
+}
+
+async function waitForDownloadedFile(downloadWatch, timeoutMs = 30000) {
+  const startedAt = downloadWatch.startedAt;
+  const snapshots = downloadWatch.snapshots;
+  const waitStartedAt = Date.now();
+
+  while (Date.now() - waitStartedAt < timeoutMs) {
+    for (const [dirPath, existingNames] of snapshots.entries()) {
+      const newFilePath = findNewDownloadInDirectory(dirPath, existingNames, startedAt);
+      if (newFilePath) {
+        return newFilePath;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  return null;
+}
+
+function findNewDownloadInDirectory(dirPath, existingNames, startedAt) {
+  if (!fs.existsSync(dirPath)) {
+    return null;
+  }
+
+  const candidates = fs
+    .readdirSync(dirPath, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => {
+      const filePath = path.join(dirPath, entry.name);
+      const stat = fs.statSync(filePath);
+      return {
+        filePath,
+        name: entry.name,
+        mtimeMs: stat.mtimeMs,
+      };
+    })
+    .filter((entry) => isCompletedDownloadFile(entry.name))
+    .filter((entry) => !existingNames.has(entry.name) || entry.mtimeMs >= startedAt - 1000)
+    .sort((left, right) => right.mtimeMs - left.mtimeMs);
+
+  return candidates[0]?.filePath || null;
+}
+
+function getDirectoryFileNames(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(dirPath, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name);
+}
+
+function isCompletedDownloadFile(fileName) {
+  const lowerName = fileName.toLowerCase();
+
+  if (
+    lowerName.endsWith('.crdownload') ||
+    lowerName.endsWith('.part') ||
+    lowerName.endsWith('.tmp') ||
+    lowerName.endsWith('.partial')
+  ) {
+    return false;
+  }
+
+  return /\.(xls|xlsx|csv)$/i.test(fileName);
+}
+
+function moveDownloadedFile(sourcePath, targetDir, baseName) {
+  ensureDir(targetDir);
+
+  const ext = path.extname(sourcePath) || '.xls';
+  const targetPath = getUniqueFilePath(targetDir, baseName, ext);
+  const samePath = path.resolve(sourcePath) === path.resolve(targetPath);
+
+  if (samePath) {
+    return sourcePath;
+  }
+
+  try {
+    fs.renameSync(sourcePath, targetPath);
+  } catch (error) {
+    if (error && error.code === 'EXDEV') {
+      fs.copyFileSync(sourcePath, targetPath);
+      fs.unlinkSync(sourcePath);
+    } else {
+      throw error;
+    }
+  }
+
+  return targetPath;
+}
+
 module.exports = {
   clickExportThenExcel,
   clickShow,
@@ -426,6 +607,7 @@ module.exports = {
   fillDate,
   fillLogin,
   getUsablePage,
+  openProfitLossReport,
   openCompany,
   safeWait,
   waitOverlayGone,

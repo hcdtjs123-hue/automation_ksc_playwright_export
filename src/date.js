@@ -37,16 +37,15 @@ function toFileDatePart(value) {
   return `${year}-${month}-${day}`;
 }
 
-function getJobFileLabel(job) {
-  if (job.startDate === job.endDate) {
-    return toFileDatePart(job.startDate);
+function getFileLabelForDateRange(startDate, endDate) {
+  if (startDate === endDate) {
+    return toFileDatePart(startDate);
   }
 
-  return `${toFileDatePart(job.startDate)}_to_${toFileDatePart(job.endDate)}`;
+  return `${toFileDatePart(startDate)}_to_${toFileDatePart(endDate)}`;
 }
 
-function getConfiguredDateJobs() {
-  const mode = ((process.env.ACCURATE_DATE_MODE || 'daily').trim().toLowerCase() || 'daily');
+function getConfiguredDateJob() {
   const { startDate, endDate } = getConfiguredDateRange();
   const start = parseDateStr(startDate);
   const end = parseDateStr(endDate);
@@ -59,35 +58,16 @@ function getConfiguredDateJobs() {
     throw new Error(`ACCURATE_END_DATE must be greater than or equal to ACCURATE_START_DATE. Received: ${startDate} -> ${endDate}`);
   }
 
-  if (mode === 'range') {
-    return [
-      {
-        label: `${startDate}..${endDate}`,
-        startDate,
-        endDate,
-      },
-    ];
-  }
-
-  const jobs = [];
-  const current = new Date(start);
-
-  while (current <= end) {
-    const date = formatDate(current);
-    jobs.push({
-      label: date,
-      startDate: date,
-      endDate: date,
-    });
-    current.setDate(current.getDate() + 1);
-  }
-
-  return jobs;
+  return {
+    label: `${startDate}..${endDate}`,
+    startDate,
+    endDate,
+  };
 }
 
 module.exports = {
-  getConfiguredDateJobs,
   getConfiguredDateRange,
-  getJobFileLabel,
+  getConfiguredDateJob,
+  getFileLabelForDateRange,
   todayStr,
 };

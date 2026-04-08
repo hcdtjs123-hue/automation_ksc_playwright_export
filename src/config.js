@@ -26,17 +26,16 @@ const CONFIG = {
   browserExecutablePath: process.env.PLAYWRIGHT_BROWSER_EXECUTABLE_PATH || '',
   chromeProfileDirectory: process.env.PLAYWRIGHT_CHROME_PROFILE_DIRECTORY || 'Default',
   outputDir:
-    process.env.ACCURATE_OUTPUT_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'downloads'),
+    process.env.ACCURATE_OUTPUT_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'ksc_downloads'),
   userDataDir:
-    process.env.PLAYWRIGHT_USER_DATA_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'user-data'),
+    process.env.PLAYWRIGHT_USER_DATA_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'ksc_user-data'),
   headless: parseBoolean(process.env.PLAYWRIGHT_HEADLESS, false),
   slowMo: parseNumber(process.env.PLAYWRIGHT_SLOW_MO, 300),
-  googleDriveFolderName: process.env.GOOGLE_DRIVE_FOLDER_NAME || 'accurate_id',
   ahkExecutable:
     process.env.AHK_EXE_PATH || 'C:\\Program Files\\AutoHotkey\\v2\\AutoHotkey64.exe',
   ahkScriptPath:
     process.env.AHK_SCRIPT_PATH ||
-    path.join(PROJECT_ROOT, 'scripts', 'windows', 'save-accurate-export.ahk'),
+    path.join(PROJECT_ROOT, 'scripts', 'windows', 'ksc-save-export.ahk'),
 };
 
 function requireEnv(name) {
@@ -86,7 +85,6 @@ function logStartupConfig() {
     userDataDir: CONFIG.userDataDir,
     headless: CONFIG.headless,
     slowMo: CONFIG.slowMo,
-    googleDriveFolderName: CONFIG.googleDriveFolderName,
     platform: process.platform,
   });
 }

@@ -25,14 +25,14 @@ function main() {
   const envPath = path.join(projectRoot, '.env');
   const ahkScriptPath =
     process.env.AHK_SCRIPT_PATH ||
-    path.join(projectRoot, 'scripts', 'windows', 'save-accurate-export.ahk');
+    path.join(projectRoot, 'scripts', 'windows', 'ksc-save-export.ahk');
   const browserName = process.env.PLAYWRIGHT_BROWSER || 'chromium';
   const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL || 'chrome';
   const browserExecutablePath = process.env.PLAYWRIGHT_BROWSER_EXECUTABLE_PATH || '';
   const chromeProfileDirectory = process.env.PLAYWRIGHT_CHROME_PROFILE_DIRECTORY || 'Default';
-  const outputDir = process.env.ACCURATE_OUTPUT_DIR || path.join(projectRoot, 'output', 'playwright', 'downloads');
+  const outputDir = process.env.ACCURATE_OUTPUT_DIR || path.join(projectRoot, 'output', 'playwright', 'ksc_downloads');
   const userDataDir =
-    process.env.PLAYWRIGHT_USER_DATA_DIR || path.join(projectRoot, 'output', 'playwright', 'user-data');
+    process.env.PLAYWRIGHT_USER_DATA_DIR || path.join(projectRoot, 'output', 'playwright', 'ksc_user-data');
   const chromiumPath = chromium.executablePath();
 
   printCheck('.env file', exists(envPath), envPath);
@@ -57,7 +57,6 @@ function main() {
     fs.mkdirSync(userDataDir, { recursive: true });
   }
   printCheck('Persistent user data dir', exists(userDataDir), userDataDir);
-  printCheck('Google Drive folder name', Boolean(envValue('GOOGLE_DRIVE_FOLDER_NAME') || 'accurate_id'), 'browser upload flow');
 
   if (process.platform === 'win32') {
     const ahkExePath =

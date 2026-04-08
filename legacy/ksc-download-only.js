@@ -16,16 +16,16 @@ const CONFIG = {
   browserName: 'chromium',
   browserExecutablePath: '',
   outputDir:
-    process.env.ACCURATE_OUTPUT_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'downloads'),
+    process.env.ACCURATE_OUTPUT_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'ksc_downloads'),
   userDataDir:
-    process.env.PLAYWRIGHT_USER_DATA_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'user-data'),
+    process.env.PLAYWRIGHT_USER_DATA_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'ksc_user-data'),
   headless: parseBoolean(process.env.PLAYWRIGHT_HEADLESS, false),
   slowMo: parseNumber(process.env.PLAYWRIGHT_SLOW_MO, 300),
   ahkExecutable:
     process.env.AHK_EXE_PATH || 'C:\\Program Files\\AutoHotkey\\v2\\AutoHotkey64.exe',
   ahkScriptPath:
     process.env.AHK_SCRIPT_PATH ||
-    path.join(PROJECT_ROOT, 'scripts', 'windows', 'save-accurate-export.ahk'),
+    path.join(PROJECT_ROOT, 'scripts', 'windows', 'ksc-save-export.ahk'),
 };
 
 function parseBoolean(value, fallback) {
@@ -512,7 +512,7 @@ async function clickExportThenExcel(page) {
   } catch {}
 
   const ext = path.extname(suggestedFilename) || '.xls';
-  const filePath = path.join(CONFIG.outputDir, `accurate_${Date.now()}${ext}`);
+  const filePath = path.join(CONFIG.outputDir, `ksc_${Date.now()}${ext}`);
 
   await download.saveAs(filePath);
   console.log('Saved:', filePath);

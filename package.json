@@ -1,12 +1,12 @@
 {
-  "name": "accurate-playwright-export",
+  "name": "ksc-playwright-export",
   "version": "1.0.0",
   "private": true,
   "description": "Playwright automation script for Accurate report export.",
-  "main": "src/accurate-export.js",
+  "main": "src/ksc-export.js",
   "scripts": {
-    "start": "node src/accurate-export.js",
-    "check": "node --check src/accurate-export.js",
+    "start": "node src/ksc-export.js",
+    "check": "node --check src/ksc-export.js",
     "doctor": "node scripts/doctor.js",
     "install:browsers": "playwright install chromium"
   },
