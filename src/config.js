@@ -28,6 +28,7 @@ const CONFIG = {
   reportListLabel: process.env.ACCURATE_REPORT_LIST_LABEL || 'Report List',
   financialLabel: process.env.ACCURATE_FINANCIAL_LABEL || 'Financial',
   profitLossLabel: process.env.ACCURATE_PROFIT_LOSS_LABEL || 'Profit/Loss (Standard)',
+  profitLossMultiPeriodLabel: process.env.ACCURATE_PROFIT_LOSS_MULTI_PERIOD_LABEL || 'Profit/Loss (Multi Period)',
   reportFileTitle: process.env.ACCURATE_REPORT_FILE_TITLE || 'AYO v3',
   monthlyTarget: parseAmount(process.env.ACCURATE_MONTHLY_TARGET, 0),
   browserName: process.env.PLAYWRIGHT_BROWSER || 'chromium',
@@ -59,12 +60,17 @@ function requireEnv(name) {
 function validateRuntimeConfig() {
   requireEnv('ACCURATE_EMAIL');
   requireEnv('ACCURATE_PASSWORD');
+  requireEnv('MULTI_PERIOD_ACCURATE_FROM_MONTH');
+  requireEnv('MULTI_PERIOD_ACCURATE_FROM_YEAR');
+  requireEnv('MULTI_PERIOD_ACCURATE_TO_MONTH');
+  requireEnv('MULTI_PERIOD_ACCURATE_TO_YEAR');
   requireConfigValue('accurateUrl');
   requireConfigValue('companyName');
   requireConfigValue('sidebarLabel');
   requireConfigValue('reportListLabel');
   requireConfigValue('financialLabel');
   requireConfigValue('profitLossLabel');
+  requireConfigValue('profitLossMultiPeriodLabel');
 }
 
 function requireConfigValue(name) {
@@ -92,6 +98,11 @@ function logStartupConfig() {
     chromeProfileDirectory: CONFIG.chromeProfileDirectory,
     reportFileTitle: CONFIG.reportFileTitle,
     monthlyTarget: CONFIG.monthlyTarget,
+    profitLossMultiPeriodLabel: CONFIG.profitLossMultiPeriodLabel,
+    multiPeriodFromMonth: process.env.MULTI_PERIOD_ACCURATE_FROM_MONTH || '',
+    multiPeriodFromYear: process.env.MULTI_PERIOD_ACCURATE_FROM_YEAR || '',
+    multiPeriodToMonth: process.env.MULTI_PERIOD_ACCURATE_TO_MONTH || '',
+    multiPeriodToYear: process.env.MULTI_PERIOD_ACCURATE_TO_YEAR || '',
     outputDir: CONFIG.outputDir,
     userDataDir: CONFIG.userDataDir,
     headless: CONFIG.headless,

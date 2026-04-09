@@ -40,6 +40,10 @@ function main() {
   printCheck('ACCURATE_PASSWORD', Boolean(envValue('ACCURATE_PASSWORD')), 'set required login password');
   printCheck('ACCURATE_REPORT_FILE_TITLE', Boolean(envValue('ACCURATE_REPORT_FILE_TITLE') || 'AYO v3'), 'used in final filename');
   printCheck('ACCURATE_MONTHLY_TARGET', Boolean(envValue('ACCURATE_MONTHLY_TARGET')), 'used for Target/Bln and %Pencapaian');
+  printCheck('MULTI_PERIOD_ACCURATE_FROM_MONTH', Boolean(envValue('MULTI_PERIOD_ACCURATE_FROM_MONTH')), 'required for multi period export');
+  printCheck('MULTI_PERIOD_ACCURATE_FROM_YEAR', Boolean(envValue('MULTI_PERIOD_ACCURATE_FROM_YEAR')), 'required for multi period export');
+  printCheck('MULTI_PERIOD_ACCURATE_TO_MONTH', Boolean(envValue('MULTI_PERIOD_ACCURATE_TO_MONTH')), 'required for multi period export');
+  printCheck('MULTI_PERIOD_ACCURATE_TO_YEAR', Boolean(envValue('MULTI_PERIOD_ACCURATE_TO_YEAR')), 'required for multi period export');
   printCheck('DAILY_ACCURATE_START_DATE', Boolean(envValue('DAILY_ACCURATE_START_DATE')), 'required for first export');
   printCheck('DAILY_ACCURATE_END_DATE', Boolean(envValue('DAILY_ACCURATE_END_DATE')), 'required for first export');
   printCheck('MTD_ACCURATE_START_DATE', Boolean(envValue('MTD_ACCURATE_START_DATE')), 'required for second export');

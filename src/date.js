@@ -93,6 +93,61 @@ function getExportFilePrefix() {
   return configuredPrefix || 'ksc_';
 }
 
+function getMonthNames() {
+  return [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+}
+
+function normalizeMonthInput(value, label) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) {
+    throw new Error(`Missing required environment variable: ${label}`);
+  }
+
+  const monthNames = getMonthNames();
+  const monthNumber = Number(rawValue);
+
+  if (Number.isInteger(monthNumber) && monthNumber >= 1 && monthNumber <= 12) {
+    return {
+      monthNumber,
+      monthLabel: monthNames[monthNumber - 1],
+      filePart: String(monthNumber).padStart(2, '0'),
+    };
+  }
+
+  const foundIndex = monthNames.findIndex((monthName) => monthName.toLowerCase() === rawValue.toLowerCase());
+  if (foundIndex >= 0) {
+    return {
+      monthNumber: foundIndex + 1,
+      monthLabel: monthNames[foundIndex],
+      filePart: String(foundIndex + 1).padStart(2, '0'),
+    };
+  }
+
+  throw new Error(`${label} must be a full month name like "February" or month number 1-12. Received: ${value}`);
+}
+
+function normalizeYearInput(value, label) {
+  const rawValue = String(value || '').trim();
+  if (!/^\d{4}$/.test(rawValue)) {
+    throw new Error(`${label} must be a 4-digit year. Received: ${value}`);
+  }
+
+  return rawValue;
+}
+
 function getConfiguredExportJobs() {
   const baseRange = getConfiguredDateRange();
   const mtdRange = getRequiredDateRange('MTD');
@@ -106,6 +161,33 @@ function getConfiguredExportJobs() {
   ];
 }
 
+function getConfiguredMultiPeriodExportJob() {
+  const exportFilePrefix = getExportFilePrefix();
+  const fromMonth = normalizeMonthInput(process.env.MULTI_PERIOD_ACCURATE_FROM_MONTH, 'MULTI_PERIOD_ACCURATE_FROM_MONTH');
+  const fromYear = normalizeYearInput(process.env.MULTI_PERIOD_ACCURATE_FROM_YEAR, 'MULTI_PERIOD_ACCURATE_FROM_YEAR');
+  const toMonth = normalizeMonthInput(process.env.MULTI_PERIOD_ACCURATE_TO_MONTH, 'MULTI_PERIOD_ACCURATE_TO_MONTH');
+  const toYear = normalizeYearInput(process.env.MULTI_PERIOD_ACCURATE_TO_YEAR, 'MULTI_PERIOD_ACCURATE_TO_YEAR');
+
+  const startKey = Number(`${fromYear}${fromMonth.filePart}`);
+  const endKey = Number(`${toYear}${toMonth.filePart}`);
+  if (endKey < startKey) {
+    throw new Error(
+      [
+        'MULTI_PERIOD_ACCURATE_TO_* must be greater than or equal to MULTI_PERIOD_ACCURATE_FROM_*.',
+        `Received: ${fromMonth.monthLabel} ${fromYear} -> ${toMonth.monthLabel} ${toYear}`,
+      ].join(' ')
+    );
+  }
+
+  return {
+    fromMonth: fromMonth.monthLabel,
+    fromYear,
+    toMonth: toMonth.monthLabel,
+    toYear,
+    fileLabel: `${exportFilePrefix}multi_period_${fromYear}-${fromMonth.filePart}_to_${toYear}-${toMonth.filePart}`,
+  };
+}
+
 function getSummaryOutputFileBaseName(endDate, companyName, reportFileTitle) {
   return `${toCompactDatePart(endDate)} - ${companyName} - ${reportFileTitle}`;
 }
@@ -113,6 +195,7 @@ function getSummaryOutputFileBaseName(endDate, companyName, reportFileTitle) {
 module.exports = {
   buildDateJob,
   getConfiguredExportJobs,
+  getConfiguredMultiPeriodExportJob,
   getConfiguredDateRange,
   getSummaryOutputFileBaseName,
   getFileLabelForDateRange,

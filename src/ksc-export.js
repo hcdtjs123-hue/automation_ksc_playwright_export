@@ -3,6 +3,7 @@ const { chromium, firefox } = require('playwright');
 const { CONFIG, ensureDir, logStartupConfig, validateRuntimeConfig } = require('./config');
 const {
   getConfiguredExportJobs,
+  getConfiguredMultiPeriodExportJob,
   getSummaryOutputFileBaseName,
 } = require('./date');
 const { buildPendapatanSummaryReport } = require('./final-report');
@@ -11,7 +12,9 @@ const {
   clickModifyInput,
   clickShow,
   fillDate,
+  fillMultiPeriod,
   fillLogin,
+  openProfitLossMultiPeriodReport,
   openProfitLossReport,
   openCompany,
   safeWait,
@@ -57,7 +60,9 @@ const {
     const page = ctx.pages().find((currentPage) => !currentPage.isClosed()) || (await ctx.newPage());
     // Urutan job selalu: daily -> mtd -> ytd.
     const exportJobs = getConfiguredExportJobs();
+    const multiPeriodJob = getConfiguredMultiPeriodExportJob();
     console.log('Export jobs =', exportJobs);
+    console.log('Multi period job =', multiPeriodJob);
 
     await page.goto(CONFIG.accurateUrl, { waitUntil: 'domcontentloaded' });
     await safeWait(page, 3000);
@@ -83,6 +88,11 @@ const {
       exportResults.push({ job, filePath: downloadedFilePath });
       console.log(`Downloaded file ${index + 1}:`, downloadedFilePath);
     }
+
+    console.log('Running multi period export...');
+    app = await openProfitLossMultiPeriodReport(ctx, app);
+    const multiPeriodFilePath = await runMultiPeriodExportJob(app, multiPeriodJob, CONFIG.outputDir);
+    console.log('Downloaded multi period file:', multiPeriodFilePath);
 
     const [dailyResult, mtdResult, ytdResult] = exportResults;
 
@@ -126,6 +136,21 @@ async function runExportJob(app, job, shouldModifyInput, targetDir) {
   }
 
   await fillDate(app, job.startDate, job.endDate);
+  await clickShow(app);
+  await waitOverlayGone(app);
+  await waitReportReady(app);
+  await safeWait(app, 3000);
+
+  const downloadedFilePath = await clickExportThenExcel(app, job.fileLabel, targetDir);
+
+  await waitOverlayGone(app);
+  await safeWait(app, 1500);
+
+  return downloadedFilePath;
+}
+
+async function runMultiPeriodExportJob(app, job, targetDir) {
+  await fillMultiPeriod(app, job);
   await clickShow(app);
   await waitOverlayGone(app);
   await waitReportReady(app);

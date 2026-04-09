@@ -36,6 +36,10 @@ cp .env.example .env
 ACCURATE_REPORT_FILE_TITLE=AYO v3
 ACCURATE_MONTHLY_TARGET=100000000
 ACCURATE_EXPORT_FILE_PREFIX=ksc_
+MULTI_PERIOD_ACCURATE_FROM_MONTH=February
+MULTI_PERIOD_ACCURATE_FROM_YEAR=2026
+MULTI_PERIOD_ACCURATE_TO_MONTH=April
+MULTI_PERIOD_ACCURATE_TO_YEAR=2026
 PLAYWRIGHT_BROWSER=chromium
 PLAYWRIGHT_BROWSER_CHANNEL=chrome
 PLAYWRIGHT_BROWSER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
@@ -52,6 +56,7 @@ YTD_ACCURATE_END_DATE=07/04/2026
 
 `ACCURATE_MONTHLY_TARGET` dipakai untuk mengisi row `Target/Bln` di final summary, dan row `%Pencapaian` dihitung dari `Total Pendapatan / Target/Bln`.
 `ACCURATE_EXPORT_FILE_PREFIX` dipakai sebagai prefix nama file export seperti `ksc_daily_...`, `ksc_mtd_...`, dan `ksc_ytd_...`.
+`MULTI_PERIOD_ACCURATE_*` dipakai untuk flow tambahan setelah 3 export utama: tutup report sekarang, buka `Profit/Loss (Multi Period)`, isi `From Period` dan `to Period`, lalu export lagi memakai flow export Excel yang sama.
 
 5. Install browser Chromium untuk Playwright:
 

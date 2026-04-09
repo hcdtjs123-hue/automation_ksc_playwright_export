@@ -131,6 +131,11 @@ async function clickTile(ctx, preferredPage, label) {
   const beforeCount = beforePages.length;
 
   const targetLocators = [
+    page.locator(`div.report-li[title*="${label}"]`),
+    page.locator('div.report-li').filter({
+      has: page.locator('.report-li-text').filter({ hasText: exactLabel }),
+    }),
+    page.locator('div.report-li').filter({ hasText: exactLabel }),
     page.locator('li.index-report-tab-option').filter({
       has: page.locator('span[data-bind="text: name"]').filter({ hasText: exactLabel }),
     }),
@@ -275,14 +280,78 @@ async function waitReportReady(page) {
 }
 
 async function openProfitLossReport(ctx, preferredPage) {
+  return openFinancialReport(ctx, preferredPage, CONFIG.profitLossLabel);
+}
+
+async function openProfitLossMultiPeriodReport(ctx, preferredPage) {
+  let app = await resolveWorkspacePage(ctx, preferredPage);
+  await closeCurrentReportTab(app);
+  await safeWait(app, 1500);
+
+  try {
+    app = await clickTile(ctx, app, CONFIG.profitLossMultiPeriodLabel);
+    return getUsablePage(ctx, app);
+  } catch (error) {
+    console.log('Direct multi period tile click failed, retrying via financial report list...');
+    return openFinancialReport(ctx, app, CONFIG.profitLossMultiPeriodLabel);
+  }
+}
+
+async function openFinancialReport(ctx, preferredPage, reportLabel) {
   let app = await resolveWorkspacePage(ctx, preferredPage);
 
   await clickSidebar(app, CONFIG.sidebarLabel);
   app = await clickTile(ctx, app, CONFIG.reportListLabel);
   app = await clickTile(ctx, app, CONFIG.financialLabel);
-  app = await clickTile(ctx, app, CONFIG.profitLossLabel);
+  app = await clickTile(ctx, app, reportLabel);
 
   return getUsablePage(ctx, app);
+}
+
+async function closeCurrentReportTab(page) {
+  console.log('Closing current report tab...');
+  await waitOverlayGone(page);
+
+  const closeLocators = [
+    page.locator('button[data-bind*="closeTab"]').first(),
+    page.locator('button:has(i.icon-cancel-2)').first(),
+    page.locator('i.icon-cancel-2').locator('xpath=ancestor::button[1]').first(),
+  ];
+
+  const closeResult = await clickFirstVisibleLocator(page, closeLocators, 'Close report tab button');
+  if (!closeResult.ok) {
+    throw new Error('Could not click current report close button');
+  }
+
+  await safeWait(page, 1500);
+  await waitOverlayGone(page);
+}
+
+async function fillMultiPeriod(page, job) {
+  await waitOverlayGone(page);
+  await page.getByText(/Report Parameter/i).first().waitFor({ state: 'visible', timeout: 15000 });
+
+  const startRow = page.locator('.row.no-margin').filter({
+    has: page.locator('label').filter({ hasText: /^\s*From Period\s*$/i }),
+  }).first();
+  const endRow = page.locator('.row.no-margin').filter({
+    has: page.locator('label').filter({ hasText: /^\s*to Period\s*$/i }),
+  }).first();
+
+  const startMonthSelect = startRow.locator('select[name="periodStartMonth"]').first();
+  const startYearInput = startRow.locator('.input-control.number input:visible').first();
+  const endMonthSelect = endRow.locator('select[name="periodEndMonth"]').first();
+  const endYearInput = endRow.locator('.input-control.number input:visible').first();
+
+  await startMonthSelect.waitFor({ state: 'visible', timeout: 15000 });
+  await startYearInput.waitFor({ state: 'visible', timeout: 15000 });
+  await endMonthSelect.waitFor({ state: 'visible', timeout: 15000 });
+  await endYearInput.waitFor({ state: 'visible', timeout: 15000 });
+
+  await setSelectValue(startMonthSelect, job.fromMonth);
+  await fillTextInput(startYearInput, job.fromYear);
+  await setSelectValue(endMonthSelect, job.toMonth);
+  await fillTextInput(endYearInput, job.toYear);
 }
 
 async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.outputDir) {
@@ -476,6 +545,7 @@ async function resolveWorkspacePage(ctx, preferredPage) {
     CONFIG.reportListLabel,
     CONFIG.financialLabel,
     CONFIG.profitLossLabel,
+    CONFIG.profitLossMultiPeriodLabel,
   ];
 
   for (const page of candidates) {
@@ -512,6 +582,41 @@ function getUniqueFilePath(dirPath, baseName, ext) {
   }
 
   return candidate;
+}
+
+async function setSelectValue(selectLocator, value) {
+  try {
+    await selectLocator.selectOption({ label: value });
+    return;
+  } catch {}
+
+  const selected = await selectLocator.evaluate((select, desiredValue) => {
+    const normalize = (input) => String(input || '').trim().toLowerCase();
+    const wanted = normalize(desiredValue);
+    const options = Array.from(select.options || []);
+    const matchingOption = options.find((option) => {
+      return normalize(option.label) === wanted || normalize(option.text) === wanted || normalize(option.value) === wanted;
+    });
+
+    if (!matchingOption) {
+      return false;
+    }
+
+    select.value = matchingOption.value;
+    select.dispatchEvent(new Event('input', { bubbles: true }));
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }, value);
+
+  if (!selected) {
+    throw new Error(`Could not select option "${value}"`);
+  }
+}
+
+async function fillTextInput(locator, value) {
+  await locator.click({ clickCount: 3 });
+  await locator.press('Backspace').catch(() => {});
+  await locator.fill(String(value));
 }
 
 function createDownloadWatch(dirPaths) {
@@ -625,13 +730,16 @@ function moveDownloadedFile(sourcePath, targetDir, baseName) {
 
 module.exports = {
   clickExportThenExcel,
+  closeCurrentReportTab,
   clickModifyInput,
   clickShow,
   clickSidebar,
   clickTile,
   fillDate,
+  fillMultiPeriod,
   fillLogin,
   getUsablePage,
+  openProfitLossMultiPeriodReport,
   openProfitLossReport,
   openCompany,
   safeWait,
