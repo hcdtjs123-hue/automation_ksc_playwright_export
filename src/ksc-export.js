@@ -93,6 +93,7 @@ const {
     app = await openProfitLossMultiPeriodReport(ctx, app);
     const multiPeriodFilePath = await runMultiPeriodExportJob(app, multiPeriodJob, CONFIG.outputDir);
     console.log('Downloaded multi period file:', multiPeriodFilePath);
+    const multiPeriodResult = { job: multiPeriodJob, filePath: multiPeriodFilePath };
 
     const [dailyResult, mtdResult, ytdResult] = exportResults;
 
@@ -100,6 +101,7 @@ const {
       dailyResult,
       mtdResult,
       ytdResult,
+      multiPeriodResult,
       outputDir: CONFIG.outputDir,
       companyName: CONFIG.companyName,
       reportFileTitle: CONFIG.reportFileTitle,
