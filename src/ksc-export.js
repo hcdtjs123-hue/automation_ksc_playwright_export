@@ -93,6 +93,7 @@ const {
       outputDir: CONFIG.outputDir,
       companyName: CONFIG.companyName,
       reportFileTitle: CONFIG.reportFileTitle,
+      monthlyTarget: CONFIG.monthlyTarget,
       outputBaseName: getSummaryOutputFileBaseName(
         dailyResult.job.endDate,
         CONFIG.companyName,

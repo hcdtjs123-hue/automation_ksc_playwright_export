@@ -14,6 +14,13 @@ function parseNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function parseAmount(value, fallback) {
+  if (value == null || value === '') return fallback;
+  const normalized = String(value).trim().replace(/,/g, '');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 const CONFIG = {
   accurateUrl: process.env.ACCURATE_URL || 'https://account.accurate.id/?lang=US',
   companyName: process.env.ACCURATE_COMPANY_NAME || 'KSC',
@@ -22,6 +29,7 @@ const CONFIG = {
   financialLabel: process.env.ACCURATE_FINANCIAL_LABEL || 'Financial',
   profitLossLabel: process.env.ACCURATE_PROFIT_LOSS_LABEL || 'Profit/Loss (Standard)',
   reportFileTitle: process.env.ACCURATE_REPORT_FILE_TITLE || 'AYO v3',
+  monthlyTarget: parseAmount(process.env.ACCURATE_MONTHLY_TARGET, 0),
   browserName: process.env.PLAYWRIGHT_BROWSER || 'chromium',
   browserChannel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || 'chrome',
   browserExecutablePath: process.env.PLAYWRIGHT_BROWSER_EXECUTABLE_PATH || '',
@@ -83,6 +91,7 @@ function logStartupConfig() {
     browserExecutablePath: CONFIG.browserExecutablePath,
     chromeProfileDirectory: CONFIG.chromeProfileDirectory,
     reportFileTitle: CONFIG.reportFileTitle,
+    monthlyTarget: CONFIG.monthlyTarget,
     outputDir: CONFIG.outputDir,
     userDataDir: CONFIG.userDataDir,
     headless: CONFIG.headless,

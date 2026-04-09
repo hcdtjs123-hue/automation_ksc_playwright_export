@@ -5,7 +5,9 @@ const { ensureDir, PROJECT_ROOT } = require('./config');
 const { parseDateStr } = require('./date');
 
 const TEMPLATE_PATH = path.join(PROJECT_ROOT, 'contoh', '20260312 - KSC - AYO v3.xlsx');
-const MAX_TEMPLATE_COLUMN = 30;
+const MAX_TEMPLATE_COLUMN = 40;
+const FOLLOWUP_SECTION_START_ROW = 21;
+const FOLLOWUP_SECTION_OFFSET = 3;
 
 const PENDAPATAN_ROWS = [
   { row: 4, section: '1. Tennis', description: 'Tennis AYO Payment', accounts: ['Pendapatan - Tennis - AYO Payment'] },
@@ -44,6 +46,8 @@ const PENDAPATAN_ROWS = [
   },
   { row: 18, section: 'Total Others', description: '', totalOfRows: [15, 16, 17] },
   { row: 19, section: 'Total Pendapatan', description: '', totalOfRows: [6, 8, 12, 14, 18] },
+  { row: 20, section: 'Target/Bln', description: '' },
+  { row: 21, section: '%Pencapaian', description: '' },
 ];
 
 async function buildPendapatanSummaryReport({
@@ -53,6 +57,7 @@ async function buildPendapatanSummaryReport({
   outputDir,
   companyName,
   reportFileTitle,
+  monthlyTarget,
   outputBaseName,
 }) {
   ensureTemplateExists();
@@ -61,6 +66,7 @@ async function buildPendapatanSummaryReport({
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(TEMPLATE_PATH);
   const worksheet = workbook.worksheets[0];
+  pushFollowupSectionsDown(worksheet);
 
   const columns = await buildSummaryColumns({
     dailyResult,
@@ -70,8 +76,8 @@ async function buildPendapatanSummaryReport({
 
   clearWorksheetValues(worksheet);
   ensureVisibleSummaryColumns(worksheet);
-  writePendapatanSection(worksheet, columns, companyName);
-  clearRowsFrom(worksheet, 21);
+  writePendapatanSection(worksheet, columns, companyName, monthlyTarget);
+  clearRowsFrom(worksheet, 22);
 
   const targetPath = path.join(outputDir, `${outputBaseName}.xlsx`);
   await workbook.xlsx.writeFile(targetPath);
@@ -117,7 +123,7 @@ async function loadProfitLossData(filePath) {
   return values;
 }
 
-function writePendapatanSection(worksheet, columns, companyName) {
+function writePendapatanSection(worksheet, columns, companyName, monthlyTarget) {
   worksheet.getCell('B2').value = `Pendapatan ${companyName}`;
   worksheet.getCell('B3').value = 'Section';
   worksheet.getCell('C3').value = 'DESCRIPTION';
@@ -138,6 +144,7 @@ function writePendapatanSection(worksheet, columns, companyName) {
   }
 
   const rowValuesByColumn = new Map();
+  const mtdColumnIndex = getMtdColumnIndex(columns);
 
   for (let columnIndex = 0; columnIndex < columns.length; columnIndex += 1) {
     const sourceValues = columns[columnIndex].values;
@@ -167,6 +174,20 @@ function writePendapatanSection(worksheet, columns, companyName) {
     }
   }
 
+  const hasMonthlyTarget = Number.isFinite(monthlyTarget) && monthlyTarget > 0;
+  rowValuesByColumn.set(
+    20,
+    columns.map((_, columnIndex) => (hasMonthlyTarget && columnIndex === mtdColumnIndex ? monthlyTarget : null))
+  );
+  rowValuesByColumn.set(
+    21,
+    columns.map((_, columnIndex) => {
+      if (!hasMonthlyTarget || columnIndex !== mtdColumnIndex) return null;
+      const totalPendapatan = rowValuesByColumn.get(19)?.[columnIndex] || 0;
+      return totalPendapatan / monthlyTarget;
+    })
+  );
+
   for (const rowConfig of PENDAPATAN_ROWS) {
     worksheet.getCell(`B${rowConfig.row}`).value = rowConfig.section || null;
     worksheet.getCell(`C${rowConfig.row}`).value = rowConfig.description || null;
@@ -177,11 +198,16 @@ function writePendapatanSection(worksheet, columns, companyName) {
     for (let columnIndex = 0; columnIndex < columns.length; columnIndex += 1) {
       const columnNumber = 4 + columnIndex;
       const targetCell = worksheet.getCell(rowConfig.row, columnNumber);
-      const value = values[columnIndex] || 0;
+      const value = values[columnIndex];
       targetCell.style = cloneStyle(sourceStyle);
-      targetCell.value = value === 0 ? null : value;
+      if (rowConfig.row === 21) {
+        targetCell.numFmt = '0.00%';
+      }
+      targetCell.value = value == null ? null : value;
     }
   }
+
+  makeCellBold(worksheet.getCell('B21'));
 }
 
 function clearWorksheetValues(worksheet) {
@@ -213,8 +239,25 @@ function clearRowsFrom(worksheet, startRow) {
   }
 }
 
+function pushFollowupSectionsDown(worksheet) {
+  const blankRows = Array.from({ length: FOLLOWUP_SECTION_OFFSET }, () => []);
+  worksheet.spliceRows(FOLLOWUP_SECTION_START_ROW, 0, ...blankRows);
+}
+
 function sumAccounts(values, accounts) {
   return accounts.reduce((sum, account) => sum + (values.get(account) || 0), 0);
+}
+
+function getMtdColumnIndex(columns) {
+  const foundIndex = columns.findIndex((column) => column.kind === 'text' && /^MTD\b/i.test(column.label || ''));
+  return foundIndex >= 0 ? foundIndex : 1;
+}
+
+function makeCellBold(cell) {
+  cell.font = {
+    ...(cell.font || {}),
+    bold: true,
+  };
 }
 
 function normalizeText(value) {
