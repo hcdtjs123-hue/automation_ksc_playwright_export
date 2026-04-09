@@ -88,15 +88,21 @@ function getRequiredDateRange(prefix) {
   };
 }
 
+function getExportFilePrefix() {
+  const configuredPrefix = (process.env.ACCURATE_EXPORT_FILE_PREFIX || '').trim();
+  return configuredPrefix || 'ksc_';
+}
+
 function getConfiguredExportJobs() {
   const baseRange = getConfiguredDateRange();
   const mtdRange = getRequiredDateRange('MTD');
   const ytdRange = getRequiredDateRange('YTD');
+  const exportFilePrefix = getExportFilePrefix();
 
   return [
-    buildDateJob('DAILY_ACCURATE', baseRange.startDate, baseRange.endDate, 'daily_'),
-    buildDateJob('MTD_ACCURATE', mtdRange.startDate, mtdRange.endDate, 'mtd_'),
-    buildDateJob('YTD_ACCURATE', ytdRange.startDate, ytdRange.endDate, 'ytd_'),
+    buildDateJob('DAILY_ACCURATE', baseRange.startDate, baseRange.endDate, `${exportFilePrefix}daily_`),
+    buildDateJob('MTD_ACCURATE', mtdRange.startDate, mtdRange.endDate, `${exportFilePrefix}mtd_`),
+    buildDateJob('YTD_ACCURATE', ytdRange.startDate, ytdRange.endDate, `${exportFilePrefix}ytd_`),
   ];
 }
 

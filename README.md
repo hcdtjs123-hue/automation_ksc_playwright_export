@@ -35,6 +35,7 @@ cp .env.example .env
 ```bash
 ACCURATE_REPORT_FILE_TITLE=AYO v3
 ACCURATE_MONTHLY_TARGET=100000000
+ACCURATE_EXPORT_FILE_PREFIX=ksc_
 PLAYWRIGHT_BROWSER=chromium
 PLAYWRIGHT_BROWSER_CHANNEL=chrome
 PLAYWRIGHT_BROWSER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
@@ -50,6 +51,7 @@ YTD_ACCURATE_END_DATE=07/04/2026
 ```
 
 `ACCURATE_MONTHLY_TARGET` dipakai untuk mengisi row `Target/Bln` di final summary, dan row `%Pencapaian` dihitung dari `Total Pendapatan / Target/Bln`.
+`ACCURATE_EXPORT_FILE_PREFIX` dipakai sebagai prefix nama file export seperti `ksc_daily_...`, `ksc_mtd_...`, dan `ksc_ytd_...`.
 
 5. Install browser Chromium untuk Playwright:
 
