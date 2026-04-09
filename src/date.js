@@ -33,6 +33,11 @@ function toFileDatePart(value) {
   return `${year}-${month}-${day}`;
 }
 
+function toCompactDatePart(value) {
+  const [day, month, year] = value.split('/');
+  return `${year}${month}${day}`;
+}
+
 function getFileLabelForDateRange(startDate, endDate, prefix = '') {
   if (startDate === endDate) {
     return `${prefix}${toFileDatePart(startDate)}`;
@@ -60,6 +65,7 @@ function buildDateJob(label, startDate, endDate, filePrefix = '') {
     label: `${startDate}..${endDate}`,
     startDate,
     endDate,
+    filePhase: filePrefix.replace(/_+$/g, ''),
     fileLabel: getFileLabelForDateRange(startDate, endDate, filePrefix),
   };
 }
@@ -94,11 +100,17 @@ function getConfiguredExportJobs() {
   ];
 }
 
+function getSummaryOutputFileBaseName(endDate, companyName, reportFileTitle) {
+  return `${toCompactDatePart(endDate)} - ${companyName} - ${reportFileTitle}`;
+}
+
 module.exports = {
   buildDateJob,
   getConfiguredExportJobs,
   getConfiguredDateRange,
+  getSummaryOutputFileBaseName,
   getFileLabelForDateRange,
   getRequiredDateRange,
+  parseDateStr,
   todayStr,
 };

@@ -38,6 +38,7 @@ function main() {
   printCheck('.env file', exists(envPath), envPath);
   printCheck('ACCURATE_EMAIL', Boolean(envValue('ACCURATE_EMAIL')), 'set required login email');
   printCheck('ACCURATE_PASSWORD', Boolean(envValue('ACCURATE_PASSWORD')), 'set required login password');
+  printCheck('ACCURATE_REPORT_FILE_TITLE', Boolean(envValue('ACCURATE_REPORT_FILE_TITLE') || 'AYO v3'), 'used in final filename');
   printCheck('DAILY_ACCURATE_START_DATE', Boolean(envValue('DAILY_ACCURATE_START_DATE')), 'required for first export');
   printCheck('DAILY_ACCURATE_END_DATE', Boolean(envValue('DAILY_ACCURATE_END_DATE')), 'required for first export');
   printCheck('MTD_ACCURATE_START_DATE', Boolean(envValue('MTD_ACCURATE_START_DATE')), 'required for second export');

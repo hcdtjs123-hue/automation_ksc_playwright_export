@@ -33,6 +33,7 @@ cp .env.example .env
 4. Atur browser dan tanggal report di `.env`:
 
 ```bash
+ACCURATE_REPORT_FILE_TITLE=AYO v3
 PLAYWRIGHT_BROWSER=chromium
 PLAYWRIGHT_BROWSER_CHANNEL=chrome
 PLAYWRIGHT_BROWSER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
@@ -44,6 +45,7 @@ MTD_ACCURATE_START_DATE=01/04/2026
 MTD_ACCURATE_END_DATE=07/04/2026
 YTD_ACCURATE_START_DATE=01/01/2026
 YTD_ACCURATE_END_DATE=07/04/2026
+# ACCURATE_OUTPUT_DIR=./output/playwright/ksc_downloads
 ```
 
 5. Install browser Chromium untuk Playwright:

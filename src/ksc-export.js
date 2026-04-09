@@ -1,7 +1,11 @@
 const { execFileSync } = require('child_process');
 const { chromium, firefox } = require('playwright');
 const { CONFIG, ensureDir, logStartupConfig, validateRuntimeConfig } = require('./config');
-const { getConfiguredExportJobs } = require('./date');
+const {
+  getConfiguredExportJobs,
+  getSummaryOutputFileBaseName,
+} = require('./date');
+const { buildPendapatanSummaryReport } = require('./final-report');
 const {
   clickExportThenExcel,
   clickModifyInput,
@@ -64,33 +68,39 @@ const {
     await safeWait(page, 8000);
 
     let app = await openCompany(page, ctx);
-    console.log('Running single report flow...');
+    console.log('Running report flow...');
 
     // Masuk ke halaman Profit/Loss sekali, lalu ulangi export dengan parameter tanggal berbeda.
     app = await openProfitLossReport(ctx, app);
+
+    const exportResults = [];
 
     for (let index = 0; index < exportJobs.length; index += 1) {
       const job = exportJobs[index];
       console.log(`Running export ${index + 1}/${exportJobs.length}:`, job);
 
-      // Export kedua dan ketiga harus membuka kembali dialog parameter lewat Modify Input.
-      if (index > 0) {
-        await clickModifyInput(app);
-      }
-
-      await fillDate(app, job.startDate, job.endDate);
-      await clickShow(app);
-      await waitOverlayGone(app);
-      await waitReportReady(app);
-      await safeWait(app, 3000);
-
-      const downloadedFilePath = await clickExportThenExcel(app, job.fileLabel);
-
-      await waitOverlayGone(app);
-      await safeWait(app, 1500);
-
+      const downloadedFilePath = await runExportJob(app, job, index > 0, CONFIG.outputDir);
+      exportResults.push({ job, filePath: downloadedFilePath });
       console.log(`Downloaded file ${index + 1}:`, downloadedFilePath);
     }
+
+    const [dailyResult, mtdResult, ytdResult] = exportResults;
+
+    const finalSummaryPath = await buildPendapatanSummaryReport({
+      dailyResult,
+      mtdResult,
+      ytdResult,
+      outputDir: CONFIG.outputDir,
+      companyName: CONFIG.companyName,
+      reportFileTitle: CONFIG.reportFileTitle,
+      outputBaseName: getSummaryOutputFileBaseName(
+        dailyResult.job.endDate,
+        CONFIG.companyName,
+        CONFIG.reportFileTitle
+      ),
+    });
+
+    console.log('Final summary file =', finalSummaryPath);
     console.log('DONE');
   } catch (error) {
     exitCode = 1;
@@ -107,6 +117,26 @@ const {
     process.exit(exitCode);
   }
 })();
+
+async function runExportJob(app, job, shouldModifyInput, targetDir) {
+  // Export setelah job pertama harus membuka kembali form parameter terlebih dulu.
+  if (shouldModifyInput) {
+    await clickModifyInput(app);
+  }
+
+  await fillDate(app, job.startDate, job.endDate);
+  await clickShow(app);
+  await waitOverlayGone(app);
+  await waitReportReady(app);
+  await safeWait(app, 3000);
+
+  const downloadedFilePath = await clickExportThenExcel(app, job.fileLabel, targetDir);
+
+  await waitOverlayGone(app);
+  await safeWait(app, 1500);
+
+  return downloadedFilePath;
+}
 
 function getBrowserType(browserName) {
   const normalized = String(browserName || 'chromium').trim().toLowerCase();

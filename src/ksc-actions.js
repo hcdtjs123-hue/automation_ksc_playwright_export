@@ -285,19 +285,22 @@ async function openProfitLossReport(ctx, preferredPage) {
   return getUsablePage(ctx, app);
 }
 
-async function clickExportThenExcel(page, fileLabel = '') {
+async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.outputDir) {
   console.log('Export -> Excel');
 
   await waitOverlayGone(page);
   await safeWait(page, 1500);
 
   const fallbackDownloadsDir = path.join(os.homedir(), 'Downloads');
-  const downloadsDir = CONFIG.outputDir || fallbackDownloadsDir;
+  const downloadsDir = targetDir || CONFIG.outputDir || fallbackDownloadsDir;
   ensureDir(downloadsDir);
   const downloadWatch = createDownloadWatch([downloadsDir, fallbackDownloadsDir]);
 
-  const normalizedLabel = String(fileLabel || '').trim().replace(/[^\w.-]+/g, '_');
-  const baseName = normalizedLabel ? `ksc_${normalizedLabel}` : `ksc_${Date.now()}`;
+  const normalizedLabel = String(fileLabel || '')
+    .replace(/[<>:"/\\|?*\x00-\x1F]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const baseName = normalizedLabel || `export_${Date.now()}`;
 
   const exportLocators = [
     page.locator('button.dropdown-toggle[name="btnExport"]'),
