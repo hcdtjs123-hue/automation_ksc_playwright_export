@@ -2,6 +2,17 @@
 
 Project ini membungkus skrip Playwright Anda menjadi struktur Node.js yang lebih rapi dan bisa dijalankan langsung.
 
+## Telegram Bot Railway
+
+Repo ini sekarang juga punya service bot Telegram berbasis webhook di `src_bot/`.
+
+- start bot: `pnpm run bot:start`
+- health check: `GET /healthz`
+- webhook: `POST /telegram/webhook`
+- panduan deploy Railway: `RAILWAY_TELEGRAM_BOT.md`
+
+Bot hanya mengizinkan user yang membagikan kontak Telegram miliknya sendiri dan nomornya ada di `TELEGRAM_ALLOWED_PHONES`.
+
 ## Struktur
 
 - `src/ksc-export.js`: entry script Playwright.
@@ -25,6 +36,9 @@ Project ini membungkus skrip Playwright Anda menjadi struktur Node.js yang lebih
   - `utils.js`: helper date, parsing, dan formatting.
 - `scripts/doctor.js`: cek cepat environment sebelum run.
 - `scripts/windows/ksc-save-export.ahk`: helper AutoHotkey untuk native save dialog.
+- `src_bot/server.js`: bot Telegram webhook untuk Railway.
+- `src_bot/`: modul bot untuk auth nomor HP, parser command, dan runner export.
+- `RAILWAY_TELEGRAM_BOT.md`: panduan deploy bot ke Railway.
 - `legacy/`: salinan file awal sebelum dirapikan.
 - `.env.example`: contoh environment variable.
 
@@ -122,3 +136,6 @@ pnpm run doctor
 
 10. `scripts/doctor.js`
    Checker cepat untuk memastikan semua env penting dan path runtime sudah siap sebelum run.
+
+11. `src_bot/server.js`
+   Entry point bot Telegram webhook untuk Railway, termasuk auth nomor HP, parser command, dan orchestration export.

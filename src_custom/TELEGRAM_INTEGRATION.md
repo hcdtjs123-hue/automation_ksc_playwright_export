@@ -2,6 +2,9 @@
 
 Dokumen ini menjelaskan cara menyambungkan flow `src_custom/` dengan bot Telegram.
 
+Untuk implementasi webhook bot yang siap deploy ke Railway, lihat juga:
+- `RAILWAY_TELEGRAM_BOT.md`
+
 ## Konsep Dasar
 
 Pisahkan input jadi 2 jenis:

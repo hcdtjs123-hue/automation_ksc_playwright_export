@@ -6,11 +6,14 @@
   "main": "src/ksc-export.js",
   "scripts": {
     "start": "node src/ksc-export.js",
+    "bot:start": "node src_bot/server.js",
     "custom:start": "node src_custom/ksc-export.js",
     "check": "node --check src/ksc-export.js",
+    "bot:check": "node --check src_bot/server.js",
     "custom:check": "node --check src_custom/ksc-export.js",
     "doctor": "node scripts/doctor.js",
-    "install:browsers": "playwright install chromium"
+    "install:browsers": "playwright install chromium",
+    "test": "node --test"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
