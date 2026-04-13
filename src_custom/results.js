@@ -87,7 +87,8 @@ function createZipBundle(outputDir, files, requestId) {
     execFileSync('zip', ['-j', '-q', zipPath, ...existingPaths], { stdio: 'pipe' });
   } catch (error) {
     if (error && error.code === 'ENOENT') {
-      throw new Error('zip command not found. Install zip or use result mode "files".');
+      console.warn('zip command not found. Falling back to result mode "files" for this run.');
+      return null;
     }
     throw error;
   }
