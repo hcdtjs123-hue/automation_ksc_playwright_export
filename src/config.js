@@ -21,6 +21,14 @@ function parseAmount(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function getEnvValue(name, fallback) {
+  if (Object.prototype.hasOwnProperty.call(process.env, name)) {
+    return String(process.env[name] ?? '');
+  }
+
+  return fallback;
+}
+
 const CONFIG = {
   accurateUrl: process.env.ACCURATE_URL || 'https://account.accurate.id/?lang=US',
   companyName: process.env.ACCURATE_COMPANY_NAME || 'KSC',
@@ -32,9 +40,9 @@ const CONFIG = {
   reportFileTitle: process.env.ACCURATE_REPORT_FILE_TITLE || 'AYO v3',
   monthlyTarget: parseAmount(process.env.ACCURATE_MONTHLY_TARGET, 0),
   browserName: process.env.PLAYWRIGHT_BROWSER || 'chromium',
-  browserChannel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || 'chrome',
-  browserExecutablePath: process.env.PLAYWRIGHT_BROWSER_EXECUTABLE_PATH || '',
-  chromeProfileDirectory: process.env.PLAYWRIGHT_CHROME_PROFILE_DIRECTORY || 'Default',
+  browserChannel: getEnvValue('PLAYWRIGHT_BROWSER_CHANNEL', 'chrome'),
+  browserExecutablePath: getEnvValue('PLAYWRIGHT_BROWSER_EXECUTABLE_PATH', ''),
+  chromeProfileDirectory: getEnvValue('PLAYWRIGHT_CHROME_PROFILE_DIRECTORY', 'Default'),
   outputDir:
     process.env.ACCURATE_OUTPUT_DIR || path.join(PROJECT_ROOT, 'output', 'playwright', 'ksc_downloads'),
   userDataDir:
