@@ -174,7 +174,8 @@ async function closeCurrentReportTab(page) {
 
   const closeResult = await clickFirstVisibleLocator(page, closeLocators, 'Close report tab button');
   if (!closeResult.ok) {
-    throw new Error('Could not click current report close button');
+    console.log('No current report tab to close, continuing...');
+    return;
   }
 
   await safeWait(page, 1500);

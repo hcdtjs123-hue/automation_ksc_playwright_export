@@ -4,6 +4,7 @@ const { CONFIG, ensureDir, logStartupConfig, validateRuntimeConfig } = require('
 const {
   getConfiguredExportJobs,
   getConfiguredMultiPeriodExportJob,
+  hasConfiguredMultiPeriodExportJob,
   getSummaryOutputFileBaseName,
 } = require('./date');
 const { buildPendapatanSummaryReport } = require('./final-report');
@@ -60,9 +61,9 @@ const {
     const page = ctx.pages().find((currentPage) => !currentPage.isClosed()) || (await ctx.newPage());
     // Urutan job selalu: daily -> mtd -> ytd.
     const exportJobs = getConfiguredExportJobs();
-    const multiPeriodJob = getConfiguredMultiPeriodExportJob();
+    const multiPeriodJob = hasConfiguredMultiPeriodExportJob() ? getConfiguredMultiPeriodExportJob() : null;
     console.log('Export jobs =', exportJobs);
-    console.log('Multi period job =', multiPeriodJob);
+    console.log('Multi period job =', multiPeriodJob || 'SKIPPED');
 
     await page.goto(CONFIG.accurateUrl, { waitUntil: 'domcontentloaded' });
     await safeWait(page, 3000);
@@ -89,31 +90,41 @@ const {
       console.log(`Downloaded file ${index + 1}:`, downloadedFilePath);
     }
 
-    console.log('Running multi period export...');
-    app = await openProfitLossMultiPeriodReport(ctx, app);
-    const multiPeriodFilePath = await runMultiPeriodExportJob(app, multiPeriodJob, CONFIG.outputDir);
-    console.log('Downloaded multi period file:', multiPeriodFilePath);
-    const multiPeriodResult = { job: multiPeriodJob, filePath: multiPeriodFilePath };
+    let multiPeriodResult = null;
+    if (multiPeriodJob) {
+      console.log('Running multi period export...');
+      app = await openProfitLossMultiPeriodReport(ctx, app);
+      const multiPeriodFilePath = await runMultiPeriodExportJob(app, multiPeriodJob, CONFIG.outputDir);
+      console.log('Downloaded multi period file:', multiPeriodFilePath);
+      multiPeriodResult = { job: multiPeriodJob, filePath: multiPeriodFilePath };
+    }
 
     const [dailyResult, mtdResult, ytdResult] = exportResults;
 
-    const finalSummaryPath = await buildPendapatanSummaryReport({
-      dailyResult,
-      mtdResult,
-      ytdResult,
-      multiPeriodResult,
-      outputDir: CONFIG.outputDir,
-      companyName: CONFIG.companyName,
-      reportFileTitle: CONFIG.reportFileTitle,
-      monthlyTarget: CONFIG.monthlyTarget,
-      outputBaseName: getSummaryOutputFileBaseName(
-        dailyResult.job.endDate,
-        CONFIG.companyName,
-        CONFIG.reportFileTitle
-      ),
-    });
+    if (dailyResult && mtdResult && ytdResult && multiPeriodResult) {
+      const finalSummaryPath = await buildPendapatanSummaryReport({
+        dailyResult,
+        mtdResult,
+        ytdResult,
+        multiPeriodResult,
+        outputDir: CONFIG.outputDir,
+        companyName: CONFIG.companyName,
+        reportFileTitle: CONFIG.reportFileTitle,
+        monthlyTarget: CONFIG.monthlyTarget,
+        outputBaseName: getSummaryOutputFileBaseName(
+          dailyResult.job.endDate,
+          CONFIG.companyName,
+          CONFIG.reportFileTitle
+        ),
+      });
 
-    console.log('Final summary file =', finalSummaryPath);
+      console.log('Final summary file =', finalSummaryPath);
+    } else {
+      const missingParts = [];
+      if (!dailyResult || !mtdResult || !ytdResult) missingParts.push('daily/mtd/ytd export set');
+      if (!multiPeriodResult) missingParts.push('multi period export');
+      console.log(`Skipping final summary because missing: ${missingParts.join(' and ')}`);
+    }
     console.log('DONE');
   } catch (error) {
     exitCode = 1;

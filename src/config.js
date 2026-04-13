@@ -60,10 +60,6 @@ function requireEnv(name) {
 function validateRuntimeConfig() {
   requireEnv('ACCURATE_EMAIL');
   requireEnv('ACCURATE_PASSWORD');
-  requireEnv('MULTI_PERIOD_ACCURATE_FROM_MONTH');
-  requireEnv('MULTI_PERIOD_ACCURATE_FROM_YEAR');
-  requireEnv('MULTI_PERIOD_ACCURATE_TO_MONTH');
-  requireEnv('MULTI_PERIOD_ACCURATE_TO_YEAR');
   requireConfigValue('accurateUrl');
   requireConfigValue('companyName');
   requireConfigValue('sidebarLabel');

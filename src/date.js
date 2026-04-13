@@ -161,6 +161,17 @@ function getConfiguredExportJobs() {
   ];
 }
 
+function hasConfiguredMultiPeriodExportJob() {
+  const requiredKeys = [
+    'MULTI_PERIOD_ACCURATE_FROM_MONTH',
+    'MULTI_PERIOD_ACCURATE_FROM_YEAR',
+    'MULTI_PERIOD_ACCURATE_TO_MONTH',
+    'MULTI_PERIOD_ACCURATE_TO_YEAR',
+  ];
+
+  return requiredKeys.every((key) => String(process.env[key] || '').trim());
+}
+
 function getConfiguredMultiPeriodExportJob() {
   const exportFilePrefix = getExportFilePrefix();
   const fromMonth = normalizeMonthInput(process.env.MULTI_PERIOD_ACCURATE_FROM_MONTH, 'MULTI_PERIOD_ACCURATE_FROM_MONTH');
@@ -196,6 +207,7 @@ module.exports = {
   buildDateJob,
   getConfiguredExportJobs,
   getConfiguredMultiPeriodExportJob,
+  hasConfiguredMultiPeriodExportJob,
   getConfiguredDateRange,
   getSummaryOutputFileBaseName,
   getFileLabelForDateRange,
