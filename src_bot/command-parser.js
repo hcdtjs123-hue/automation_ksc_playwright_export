@@ -76,6 +76,11 @@ function getExportUsageText() {
     '/export yearly DD/MM/YYYY DD/MM/YYYY',
     '/export multiperiod Month YYYY Month YYYY',
     '/export daily 01/04/2026 monthly 01/04/2026 30/04/2026 multiperiod May 2026 June 2026',
+    '/export daily 01/04/2026 monthly 01/04/2026 30/04/2026 yearly 01/01/2026 30/04/2026 multiperiod May 2026 June 2026',
+    '',
+    'Catatan:',
+    '- Tanpa yearly, bot hanya kirim file export yang diminta.',
+    '- Summary v3 dan v4 saat ini dibuat jika command berisi daily + monthly + yearly + multiperiod.',
   ].join('\n');
 }
 

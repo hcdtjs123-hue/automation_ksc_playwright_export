@@ -47,4 +47,6 @@ test('getExportUsageText includes core syntax examples', () => {
 
   assert.match(usage, /\/export daily DD\/MM\/YYYY/);
   assert.match(usage, /\/export multiperiod Month YYYY Month YYYY/);
+  assert.match(usage, /Tanpa yearly, bot hanya kirim file export yang diminta\./);
+  assert.match(usage, /Summary v3 dan v4 saat ini dibuat jika command berisi daily \+ monthly \+ yearly \+ multiperiod\./);
 });
