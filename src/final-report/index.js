@@ -5,6 +5,7 @@ const { ensureDir } = require('../config');
 const { TEMPLATE_PATH } = require('./constants');
 const { buildSummaryColumns, loadMultiPeriodData } = require('./loaders');
 const { clearRowsFrom, clearWorksheetValues, ensureVisibleSummaryColumns } = require('./worksheet');
+const { buildPendapatanSummaryReportV4 } = require('./v4');
 const {
   writePendapatanDiterimaDimukaSection,
   writePendapatanSection,
@@ -50,6 +51,51 @@ async function buildPendapatanSummaryReport({
   return targetPath;
 }
 
+async function buildPendapatanSummaryReports({
+  academyTennisRevenue,
+  dailyResult,
+  mtdResult,
+  multiPeriodResult,
+  outputDir,
+  companyName,
+  reportFileTitle,
+  monthlyTarget,
+  v3OutputBaseName,
+  v4OutputBaseName,
+  ytdResult,
+}) {
+  const paths = [];
+  const v3Path = await buildPendapatanSummaryReport({
+    dailyResult,
+    mtdResult,
+    ytdResult,
+    multiPeriodResult,
+    outputDir,
+    companyName,
+    reportFileTitle,
+    monthlyTarget,
+    outputBaseName: v3OutputBaseName,
+  });
+  paths.push(v3Path);
+
+  const v4Path = await buildPendapatanSummaryReportV4({
+    academyTennisRevenue,
+    companyName,
+    dailyResult,
+    mtdResult,
+    monthlyTarget,
+    outputBaseName: v4OutputBaseName,
+    outputDir,
+  });
+  paths.push(v4Path);
+
+  return {
+    paths,
+    v3Path,
+    v4Path,
+  };
+}
+
 function ensureTemplateExists() {
   if (!fs.existsSync(TEMPLATE_PATH)) {
     throw new Error(`Missing summary template: ${TEMPLATE_PATH}`);
@@ -58,4 +104,5 @@ function ensureTemplateExists() {
 
 module.exports = {
   buildPendapatanSummaryReport,
+  buildPendapatanSummaryReports,
 };

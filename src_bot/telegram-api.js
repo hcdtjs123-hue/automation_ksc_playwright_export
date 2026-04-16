@@ -2,8 +2,9 @@ const fs = require('fs/promises');
 const path = require('path');
 
 class TelegramApi {
-  constructor(botToken) {
+  constructor(botToken, options = {}) {
     this.baseUrl = `https://api.telegram.org/bot${botToken}`;
+    this.timeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0 ? options.timeoutMs : 30000;
   }
 
   async deleteWebhook() {
@@ -52,6 +53,7 @@ class TelegramApi {
 
   async callForm(method, form) {
     const response = await fetch(`${this.baseUrl}/${method}`, {
+      signal: AbortSignal.timeout(this.timeoutMs),
       body: form,
       method: 'POST',
     });
@@ -61,6 +63,7 @@ class TelegramApi {
 
   async callJson(method, payload) {
     const response = await fetch(`${this.baseUrl}/${method}`, {
+      signal: AbortSignal.timeout(this.timeoutMs),
       body: JSON.stringify(payload),
       headers: {
         'content-type': 'application/json',

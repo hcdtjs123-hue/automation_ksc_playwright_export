@@ -71,5 +71,6 @@ function findMultiPeriodTotalColumn(worksheet) {
 
 module.exports = {
   buildSummaryColumns,
+  loadProfitLossData,
   loadMultiPeriodData,
 };

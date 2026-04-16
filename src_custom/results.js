@@ -7,9 +7,10 @@ function finalizeRunResult({
   exportResults,
   multiPeriodResult,
   finalSummaryPath,
+  finalSummaryPaths,
   runtimeParams,
 }) {
-  const files = buildArtifactFiles(exportResults, multiPeriodResult, finalSummaryPath);
+  const files = buildArtifactFiles(exportResults, multiPeriodResult, finalSummaryPaths || finalSummaryPath);
   const requestId = getRequestId(runtimeParams);
   const resultMode = getResultMode();
 
@@ -37,7 +38,7 @@ function finalizeRunResult({
   return manifest;
 }
 
-function buildArtifactFiles(exportResults, multiPeriodResult, finalSummaryPath) {
+function buildArtifactFiles(exportResults, multiPeriodResult, finalSummaryPaths) {
   const files = [];
 
   for (const result of exportResults || []) {
@@ -49,11 +50,19 @@ function buildArtifactFiles(exportResults, multiPeriodResult, finalSummaryPath) 
     files.push(buildFileDescriptor(multiPeriodResult.filePath, 'multi_period', multiPeriodResult.job));
   }
 
-  if (finalSummaryPath) {
-    files.push(buildFileDescriptor(finalSummaryPath, 'final_summary', null));
+  for (const [index, summaryPath] of normalizeSummaryPaths(finalSummaryPaths).entries()) {
+    files.push(buildFileDescriptor(summaryPath, index === 0 ? 'final_summary' : `final_summary_${index + 1}`, null));
   }
 
   return files;
+}
+
+function normalizeSummaryPaths(value) {
+  if (!value) {
+    return [];
+  }
+
+  return (Array.isArray(value) ? value : [value]).filter(Boolean);
 }
 
 function buildFileDescriptor(filePath, kind, job) {
@@ -112,5 +121,6 @@ function getRequestId(runtimeParams) {
 }
 
 module.exports = {
+  buildArtifactFiles,
   finalizeRunResult,
 };

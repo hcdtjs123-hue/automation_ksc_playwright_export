@@ -33,6 +33,15 @@ function parsePort(rawValue, fallback) {
   return parsed;
 }
 
+function parseTimeout(rawValue, fallback) {
+  const parsed = Number.parseInt(String(rawValue || ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
 function normalizeResultMode(rawValue) {
   const normalized = String(rawValue || '').trim().toLowerCase();
   if (!normalized) return 'zip';
@@ -79,6 +88,7 @@ const CONFIG = {
   port: parsePort(process.env.PORT, 3000),
   projectRoot: PROJECT_ROOT,
   resultMode: normalizeResultMode(process.env.TELEGRAM_RESULT_MODE),
+  telegramApiTimeoutMs: parseTimeout(process.env.TELEGRAM_API_TIMEOUT_MS, 30000),
   telegramAllowedPhones: parseAllowedPhones(process.env.TELEGRAM_ALLOWED_PHONES),
   telegramBotToken: requireEnv('TELEGRAM_BOT_TOKEN'),
   telegramWebhookSecret: requireEnv('TELEGRAM_WEBHOOK_SECRET'),
@@ -103,6 +113,7 @@ function logBotStartupConfig() {
     outputRoot: CONFIG.outputRoot,
     port: CONFIG.port,
     resultMode: CONFIG.resultMode,
+    telegramApiTimeoutMs: CONFIG.telegramApiTimeoutMs,
     telegramAllowedPhonesCount: CONFIG.telegramAllowedPhones.size,
     telegramWebhookUrl: CONFIG.telegramWebhookUrl,
   });

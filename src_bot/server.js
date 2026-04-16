@@ -9,7 +9,9 @@ const { TelegramApi } = require('./telegram-api');
 const { buildRequestId, buildRunOutputDir, formatUserLabel, normalizePhone } = require('./utils');
 
 const authStore = new AuthStore(CONFIG.authStorePath);
-const telegram = new TelegramApi(CONFIG.telegramBotToken);
+const telegram = new TelegramApi(CONFIG.telegramBotToken, {
+  timeoutMs: CONFIG.telegramApiTimeoutMs,
+});
 let currentRun = null;
 
 async function bootstrap() {
@@ -214,13 +216,17 @@ async function handleExportCommand({ chatId, text, user }) {
     userLabel: formatUserLabel(user),
   };
 
-  await telegram.sendMessage(
+  await notifyTelegram(
     chatId,
-    [
-      `Export dimulai untuk ${formatUserLabel(user)}.`,
-      `requestId: ${requestId}`,
-      `mode: ${CONFIG.resultMode}`,
-    ].join('\n')
+    'send start status',
+    telegram.sendMessage(
+      chatId,
+      [
+        `Export dimulai untuk ${formatUserLabel(user)}.`,
+        `requestId: ${requestId}`,
+        `mode: ${CONFIG.resultMode}`,
+      ].join('\n')
+    )
   );
 
   try {
@@ -229,49 +235,86 @@ async function handleExportCommand({ chatId, text, user }) {
       projectRoot: CONFIG.projectRoot,
     });
 
-    await sendRunArtifacts(chatId, runResult);
-    await telegram.sendMessage(chatId, buildRunSuccessText(runResult));
+    currentRun = null;
+
+    const deliveryResult = await sendRunArtifacts(chatId, runResult);
+    await notifyTelegram(
+      chatId,
+      'send success status',
+      telegram.sendMessage(chatId, buildRunSuccessText(runResult, deliveryResult))
+    );
   } catch (error) {
     console.error('Export run failed:', error);
-    await telegram.sendMessage(
-      chatId,
-      [
-        'Export gagal dijalankan.',
-        sanitizeErrorMessage(error),
-        'Silakan cek log Railway untuk detail teknis.',
-      ].join('\n')
-    );
-  } finally {
     currentRun = null;
+
+    await notifyTelegram(
+      chatId,
+      'send failure status',
+      telegram.sendMessage(
+        chatId,
+        [
+          'Export gagal dijalankan.',
+          sanitizeErrorMessage(error),
+          'Silakan cek log Railway untuk detail teknis.',
+        ].join('\n')
+      )
+    );
   }
 }
 
 async function sendRunArtifacts(chatId, runResult) {
-  const bundlePath = runResult?.bundle?.path;
-  if (bundlePath && fs.existsSync(bundlePath)) {
-    await telegram.sendDocument(chatId, bundlePath, {
-      caption: `Bundle hasil export: ${path.basename(bundlePath)}`,
-    });
-    return;
-  }
-
   const files = Array.isArray(runResult?.files) ? runResult.files : [];
   let sentCount = 0;
+  let failedCount = 0;
 
   for (const file of files) {
     if (!file?.path || !fs.existsSync(file.path)) {
       continue;
     }
 
-    await telegram.sendDocument(chatId, file.path, {
-      caption: `File ${file.kind || 'export'}: ${file.fileName || path.basename(file.path)}`,
-    });
-    sentCount += 1;
+    const sent = await notifyTelegram(
+      chatId,
+      `send document ${file.fileName || path.basename(file.path)}`,
+      telegram.sendDocument(chatId, file.path, {
+        caption: `File ${file.kind || 'export'}: ${file.fileName || path.basename(file.path)}`,
+      })
+    );
+
+    if (sent) {
+      sentCount += 1;
+    } else {
+      failedCount += 1;
+    }
   }
 
   if (sentCount === 0) {
-    await telegram.sendMessage(chatId, 'Export selesai, tetapi tidak ada file yang ditemukan untuk dikirim.');
+    const bundlePath = runResult?.bundle?.path;
+    if (bundlePath && fs.existsSync(bundlePath)) {
+      const sentBundle = await notifyTelegram(
+        chatId,
+        `send bundle ${path.basename(bundlePath)}`,
+        telegram.sendDocument(chatId, bundlePath, {
+          caption: `Bundle hasil export: ${path.basename(bundlePath)}`,
+        })
+      );
+
+      return {
+        failedCount: sentBundle ? failedCount : failedCount + 1,
+        sentCount: sentBundle ? 1 : 0,
+      };
+    }
+
+    await notifyTelegram(
+      chatId,
+      'send empty-artifact status',
+      telegram.sendMessage(chatId, 'Export selesai, tetapi tidak ada file yang ditemukan untuk dikirim.')
+    );
   }
+
+  return {
+    failedCount,
+    sentCount,
+  };
 }
 
 function buildHelpText() {
@@ -286,11 +329,15 @@ function buildHelpText() {
   ].join('\n');
 }
 
-function buildRunSuccessText(runResult) {
+function buildRunSuccessText(runResult, deliveryResult = {}) {
   const files = Array.isArray(runResult?.files) ? runResult.files.length : 0;
+  const sentFiles = Number(deliveryResult?.sentCount || 0);
+  const failedFiles = Number(deliveryResult?.failedCount || 0);
   return [
     'Export selesai.',
     `file count: ${files}`,
+    `telegram sent: ${sentFiles}`,
+    `telegram failed: ${failedFiles}`,
     `manifest: ${runResult?.manifestPath || '-'}`,
     `bundle: ${runResult?.bundle?.fileName || '-'}`,
   ].join('\n');
@@ -368,6 +415,16 @@ function redactSecret(text, secret, label) {
   }
 
   return String(text || '').replaceAll(normalizedSecret, label);
+}
+
+async function notifyTelegram(chatId, action, promise) {
+  try {
+    await promise;
+    return true;
+  } catch (error) {
+    console.error(`Telegram notify failed (${action}) for chat ${chatId}:`, error);
+    return false;
+  }
 }
 
 function sendJson(res, statusCode, payload) {

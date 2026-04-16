@@ -62,6 +62,7 @@ cp .env.example .env
 
 ```bash
 ACCURATE_REPORT_FILE_TITLE=AYO v3
+ACCURATE_ACADEMY_TENNIS_REVENUE=0
 ACCURATE_MONTHLY_TARGET=100000000
 ACCURATE_EXPORT_FILE_PREFIX=ksc_
 MULTI_PERIOD_ACCURATE_FROM_MONTH=February
@@ -82,9 +83,14 @@ YTD_ACCURATE_END_DATE=07/04/2026
 # ACCURATE_OUTPUT_DIR=./output/playwright/ksc_downloads
 ```
 
-`ACCURATE_MONTHLY_TARGET` dipakai untuk mengisi row `Target/Bln` di final summary, dan row `%Pencapaian` dihitung dari `Total Pendapatan / Target/Bln`.
+`ACCURATE_ACADEMY_TENNIS_REVENUE` dipakai oleh summary v4 untuk row `2. ACADEMY TENNIS`.
+`ACCURATE_MONTHLY_TARGET` dipakai untuk target final summary, dan persen di bawah tabel membership pada summary v4 dihitung dari `TOTAL REVENUE / ACCURATE_MONTHLY_TARGET`.
 `ACCURATE_EXPORT_FILE_PREFIX` dipakai sebagai prefix nama file export seperti `ksc_daily_...`, `ksc_mtd_...`, dan `ksc_ytd_...`.
 `MULTI_PERIOD_ACCURATE_*` dipakai untuk flow tambahan setelah 3 export utama: tutup report sekarang, buka `Profit/Loss (Multi Period)`, isi `From Period` dan `to Period`, lalu export lagi memakai flow export Excel yang sama.
+
+Saat export lengkap tersedia, script sekarang membuat dua summary sekaligus:
+- summary v3: format lama
+- summary v4: template ringkas daily + monthly membership
 
 5. Install browser Chromium untuk Playwright:
 

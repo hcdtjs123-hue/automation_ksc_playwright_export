@@ -31,6 +31,7 @@ function getEnvValue(name, fallback) {
 
 const CONFIG = {
   accurateUrl: process.env.ACCURATE_URL || 'https://account.accurate.id/?lang=US',
+  academyTennisRevenue: parseAmount(process.env.ACCURATE_ACADEMY_TENNIS_REVENUE, 0),
   companyName: process.env.ACCURATE_COMPANY_NAME || 'KSC',
   sidebarLabel: process.env.ACCURATE_SIDEBAR_LABEL || 'Reports',
   reportListLabel: process.env.ACCURATE_REPORT_LIST_LABEL || 'Report List',
@@ -95,6 +96,7 @@ function ensureDir(dirPath) {
 function logStartupConfig() {
   console.log('Runtime config:', {
     accurateUrl: CONFIG.accurateUrl,
+    academyTennisRevenue: CONFIG.academyTennisRevenue,
     companyName: CONFIG.companyName,
     browserName: CONFIG.browserName,
     browserChannel: CONFIG.browserChannel,

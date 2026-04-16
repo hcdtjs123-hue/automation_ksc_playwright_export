@@ -22,6 +22,7 @@ ACCURATE_EMAIL=your-email@example.com
 ACCURATE_PASSWORD=your-password
 ACCURATE_COMPANY_NAME=KSC
 ACCURATE_REPORT_FILE_TITLE=AYO v3
+ACCURATE_ACADEMY_TENNIS_REVENUE=0
 ACCURATE_MONTHLY_TARGET=100000000
 ```
 
@@ -29,6 +30,7 @@ Direkomendasikan untuk Railway:
 
 ```env
 TELEGRAM_RESULT_MODE=zip
+TELEGRAM_API_TIMEOUT_MS=30000
 TELEGRAM_AUTH_STORE_PATH=/app/output/playwright/telegram/auth-users.json
 ACCURATE_OUTPUT_DIR=/app/output/playwright/telegram/runs
 PLAYWRIGHT_USER_DATA_DIR=/app/output/playwright/ksc_user-data
@@ -89,4 +91,5 @@ https://<RAILWAY_PUBLIC_DOMAIN>/telegram/webhook
 
 - Hanya satu export aktif pada satu waktu per service.
 - Kalau Railway restart, auth user tetap aman selama volume yang sama masih terpasang.
-- Bot mengirim zip jika `TELEGRAM_RESULT_MODE=zip`; kalau bundle zip tidak ada, bot fallback kirim file satu-satu.
+- Bot akan mengirim semua file hasil export satu per satu ke Telegram. Bundle zip tetap dipakai sebagai fallback jika pengiriman file individual tidak ada yang berhasil.
+- Timeout request ke Telegram bisa diatur lewat `TELEGRAM_API_TIMEOUT_MS` agar bot tidak tertahan terlalu lama saat jaringan ke Telegram bermasalah.

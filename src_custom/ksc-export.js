@@ -7,7 +7,7 @@ const {
   hasConfiguredMultiPeriodExportJob,
   getSummaryOutputFileBaseName,
 } = require('./date');
-const { buildPendapatanSummaryReport } = require('./final-report');
+const { buildPendapatanSummaryReports } = require('./final-report');
 const { finalizeRunResult } = require('./results');
 const {
   clickExportThenExcel,
@@ -105,9 +105,10 @@ const {
     }
 
     const summaryInputs = pickFinalSummaryInputs(exportResults);
-    let finalSummaryPath = '';
+    let finalSummaryPaths = [];
     if (summaryInputs && multiPeriodResult) {
-      finalSummaryPath = await buildPendapatanSummaryReport({
+      const summaryReportResult = await buildPendapatanSummaryReports({
+        academyTennisRevenue: CONFIG.academyTennisRevenue,
         dailyResult: summaryInputs.dailyResult,
         mtdResult: summaryInputs.monthlyResult,
         ytdResult: summaryInputs.yearlyResult,
@@ -116,14 +117,20 @@ const {
         companyName: CONFIG.companyName,
         reportFileTitle: CONFIG.reportFileTitle,
         monthlyTarget: CONFIG.monthlyTarget,
-        outputBaseName: getSummaryOutputFileBaseName(
+        v3OutputBaseName: getSummaryOutputFileBaseName(
           summaryInputs.dailyResult.job.endDate,
           CONFIG.companyName,
           CONFIG.reportFileTitle
         ),
+        v4OutputBaseName: getSummaryOutputFileBaseName(
+          summaryInputs.dailyResult.job.endDate,
+          CONFIG.companyName,
+          toReportTitleVersion(CONFIG.reportFileTitle, 'v4')
+        ),
       });
+      finalSummaryPaths = summaryReportResult.paths;
 
-      console.log('Final summary file =', finalSummaryPath);
+      console.log('Final summary files =', finalSummaryPaths);
     } else if (exportResults.length > 0 || !multiPeriodJob) {
       const missingParts = [];
       if (!summaryInputs) missingParts.push('daily/monthly/yearly export set');
@@ -135,7 +142,7 @@ const {
       outputDir: CONFIG.outputDir,
       exportResults,
       multiPeriodResult,
-      finalSummaryPath,
+      finalSummaryPaths,
       runtimeParams: APPLIED_RUNTIME_PARAMS,
     });
 
@@ -246,6 +253,19 @@ function getBrowserType(browserName) {
   }
 
   return chromium;
+}
+
+function toReportTitleVersion(reportFileTitle, versionLabel) {
+  const trimmedTitle = String(reportFileTitle || '').trim();
+  if (!trimmedTitle) {
+    return versionLabel.toUpperCase();
+  }
+
+  if (/\bv\d+\b/i.test(trimmedTitle)) {
+    return trimmedTitle.replace(/\bv\d+\b/i, versionLabel);
+  }
+
+  return `${trimmedTitle} ${versionLabel}`;
 }
 
 function assertChromeProfileIsAvailable() {

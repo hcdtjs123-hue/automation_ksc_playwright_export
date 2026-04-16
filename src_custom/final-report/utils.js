@@ -60,15 +60,61 @@ function buildUntilMonthEndLabelFromDate(dateValue) {
 }
 
 function buildMtdLabel(startDate, endDate) {
-  const start = parseSummaryDate(startDate);
-  const end = parseSummaryDate(endDate);
-  return `MTD (${start.getDate()}-${end.getDate()}${getMonthShortName(end)})`;
+  return `MTD (${buildPeriodLabel(startDate, endDate)})`;
 }
 
 function buildYtdLabel(startDate, endDate) {
   const start = parseSummaryDate(startDate);
   const end = parseSummaryDate(endDate);
   return `YTD (${start.getDate()}${getMonthShortName(start)}-${end.getDate()}${getMonthShortName(end)})`;
+}
+
+function buildPeriodLabel(startDate, endDate) {
+  const start = parseSummaryDate(startDate);
+  const end = parseSummaryDate(endDate);
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+
+  if (sameMonth) {
+    return `${start.getDate()}-${end.getDate()}${getMonthShortName(end)}`;
+  }
+
+  return `${start.getDate()}${getMonthShortName(start)}-${end.getDate()}${getMonthShortName(end)}`;
+}
+
+function buildPeriodLabelUntilMonthEnd(startDate, dateValue) {
+  const start = parseSummaryDate(startDate);
+  const date = parseSummaryDate(dateValue);
+  const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  return buildPeriodLabel(start, monthEnd);
+}
+
+function normalizeMatchKey(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function sumMatchingAccounts(values, matchers) {
+  let total = 0;
+
+  for (const [account, amount] of values.entries()) {
+    if (matchesAccount(account, matchers)) {
+      total += amount || 0;
+    }
+  }
+
+  return total;
+}
+
+function matchesAccount(account, matchers) {
+  const normalizedAccount = normalizeMatchKey(account);
+
+  return matchers.some((matcher) => {
+    if (matcher instanceof RegExp) {
+      return matcher.test(account) || matcher.test(normalizedAccount);
+    }
+
+    const normalizedMatcher = normalizeMatchKey(matcher);
+    return normalizedAccount === normalizedMatcher || normalizedAccount.includes(normalizedMatcher);
+  });
 }
 
 function getMtdColumnIndex(columns) {
@@ -96,10 +142,13 @@ module.exports = {
   getMonthShortName,
   buildSnapshotLabel,
   buildUntilMonthEndLabelFromDate,
+  buildPeriodLabel,
+  buildPeriodLabelUntilMonthEnd,
   buildMtdLabel,
   buildYtdLabel,
   getMtdColumnIndex,
   sumAccounts,
+  sumMatchingAccounts,
   toExcelSerial,
   cloneStyle,
 };

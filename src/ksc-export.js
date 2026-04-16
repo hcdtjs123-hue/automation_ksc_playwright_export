@@ -7,7 +7,7 @@ const {
   hasConfiguredMultiPeriodExportJob,
   getSummaryOutputFileBaseName,
 } = require('./date');
-const { buildPendapatanSummaryReport } = require('./final-report');
+const { buildPendapatanSummaryReports } = require('./final-report');
 const {
   clickExportThenExcel,
   clickModifyInput,
@@ -102,7 +102,8 @@ const {
     const [dailyResult, mtdResult, ytdResult] = exportResults;
 
     if (dailyResult && mtdResult && ytdResult && multiPeriodResult) {
-      const finalSummaryPath = await buildPendapatanSummaryReport({
+      const summaryReportResult = await buildPendapatanSummaryReports({
+        academyTennisRevenue: CONFIG.academyTennisRevenue,
         dailyResult,
         mtdResult,
         ytdResult,
@@ -111,14 +112,19 @@ const {
         companyName: CONFIG.companyName,
         reportFileTitle: CONFIG.reportFileTitle,
         monthlyTarget: CONFIG.monthlyTarget,
-        outputBaseName: getSummaryOutputFileBaseName(
+        v3OutputBaseName: getSummaryOutputFileBaseName(
           dailyResult.job.endDate,
           CONFIG.companyName,
           CONFIG.reportFileTitle
         ),
+        v4OutputBaseName: getSummaryOutputFileBaseName(
+          dailyResult.job.endDate,
+          CONFIG.companyName,
+          toReportTitleVersion(CONFIG.reportFileTitle, 'v4')
+        ),
       });
 
-      console.log('Final summary file =', finalSummaryPath);
+      console.log('Final summary files =', summaryReportResult.paths);
     } else {
       const missingParts = [];
       if (!dailyResult || !mtdResult || !ytdResult) missingParts.push('daily/mtd/ytd export set');
@@ -185,6 +191,19 @@ function getBrowserType(browserName) {
   }
 
   return chromium;
+}
+
+function toReportTitleVersion(reportFileTitle, versionLabel) {
+  const trimmedTitle = String(reportFileTitle || '').trim();
+  if (!trimmedTitle) {
+    return versionLabel.toUpperCase();
+  }
+
+  if (/\bv\d+\b/i.test(trimmedTitle)) {
+    return trimmedTitle.replace(/\bv\d+\b/i, versionLabel);
+  }
+
+  return `${trimmedTitle} ${versionLabel}`;
 }
 
 function assertChromeProfileIsAvailable() {
