@@ -3,7 +3,7 @@
   "chatId": "123456789",
   "outputDir": "./output/playwright/telegram/run-001",
   "result": {
-    "mode": "zip"
+    "mode": "files"
   },
   "exportPlan": [
     { "type": "daily", "date": "01/04/2026" },
