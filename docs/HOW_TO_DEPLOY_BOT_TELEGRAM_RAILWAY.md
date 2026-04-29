@@ -1,6 +1,14 @@
-# Railway Telegram Bot
+# HOW TO DEPLOY BOT TELEGRAM RAILWAY
 
 Dokumen ini menjelaskan cara deploy bot Telegram webhook untuk flow `src_custom/` ke Railway.
+
+Fokus dokumen ini adalah deploy dan operasional service bot di Railway.
+
+Dokumen lain:
+
+- `../README.md`: overview repo
+- `HOW_TO_RUN.md`: menjalankan project di local
+- `HOW_TO_INTEGRATE_BOT_TELEGRAM.md`: payload runtime, hasil run, dan kontrak integrasi bot ke flow custom
 
 ## Ringkas Arsitektur
 
@@ -29,7 +37,7 @@ ACCURATE_MONTHLY_TARGET=100000000
 Direkomendasikan untuk Railway:
 
 ```env
-TELEGRAM_RESULT_MODE=zip
+TELEGRAM_RESULT_MODE=files
 TELEGRAM_API_TIMEOUT_MS=30000
 TELEGRAM_AUTH_STORE_PATH=/app/output/playwright/telegram/auth-users.json
 ACCURATE_OUTPUT_DIR=/app/output/playwright/telegram/runs
@@ -86,6 +94,8 @@ https://<RAILWAY_PUBLIC_DOMAIN>/telegram/webhook
 /export multiperiod May 2026 June 2026
 /export daily 01/04/2026 monthly 01/04/2026 30/04/2026 multiperiod May 2026 June 2026
 ```
+
+Untuk detail payload runtime yang dibentuk dari command di atas, lihat `HOW_TO_INTEGRATE_BOT_TELEGRAM.md`.
 
 ## Catatan
 

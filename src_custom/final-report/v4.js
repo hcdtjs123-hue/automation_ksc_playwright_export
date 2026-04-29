@@ -8,10 +8,12 @@ const {
   buildPeriodLabelUntilMonthEnd,
   buildSnapshotLabel,
   normalizeNumber,
+  sumAccounts,
   sumMatchingAccounts,
 } = require('./utils');
 
 const TEMPLATE_V4_PATH = path.join(__dirname, '..', '..', 'contoh', '20260414 - KSC - AYO v4.xlsx');
+const AMOUNT_NUM_FMT = '#,##0.00';
 
 const DAILY_MATCHERS = {
   tennis: ['Pendapatan - Tennis - AYO Payment', 'Tennis - AYO'],
@@ -21,7 +23,12 @@ const DAILY_MATCHERS = {
   others: ['Pendapatan - Lainnya (Merchandise, sewa raket, etc)', 'Lainnya'],
 };
 
-const MONTHLY_MEMBERSHIP_MATCHERS = [/membership/i, /uang pangkal/i];
+const MONTHLY_MEMBERSHIP_MATCHERS = {
+  lesRenang: ['Pendapatan - Membership Les Renang'],
+  renang: ['Pendapatan - Membership Renang'],
+  gymClass: ['Pendapatan - Membership Gym Class'],
+  gymClassRenang: ['Pendapatan - Membership Gym Class & Renang'],
+};
 
 async function buildPendapatanSummaryReportV4({
   academyTennisRevenue,
@@ -62,7 +69,15 @@ async function buildPendapatanSummaryReportV4({
         ])
       : 0
   );
-  const monthlyMembershipRevenue = sumMatchingAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS);
+  const membershipLesRenangRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.lesRenang);
+  const membershipRenangRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.renang);
+  const membershipGymClassRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.gymClass);
+  const membershipGymClassRenangRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.gymClassRenang);
+  const monthlyMembershipRevenue =
+    membershipLesRenangRevenue +
+    membershipRenangRevenue +
+    membershipGymClassRevenue +
+    membershipGymClassRenangRevenue;
   const normalizedAcademyRevenue = normalizeNumber(academyTennisRevenue);
   const totalMonthlyMembershipRevenue = monthlyMembershipRevenue + normalizedAcademyRevenue;
   const totalRevenue = monthToDateRevenue + totalMonthlyMembershipRevenue;
@@ -70,24 +85,27 @@ async function buildPendapatanSummaryReportV4({
   worksheet.getCell('B3').value = `REVENUE ${String(companyName || 'KSC').trim()} DAILY: ${buildSnapshotLabel(
     dailyResult.job.endDate
   )}`;
-  worksheet.getCell('C4').value = tennisRevenue;
-  worksheet.getCell('C5').value = padelRevenue;
-  worksheet.getCell('C6').value = renangRevenue;
-  worksheet.getCell('C7').value = gymRevenue;
-  worksheet.getCell('C8').value = otherRevenue;
-  worksheet.getCell('C9').value = totalDailyRevenue;
+  setAmountCell(worksheet.getCell('C4'), tennisRevenue);
+  setAmountCell(worksheet.getCell('C5'), padelRevenue);
+  setAmountCell(worksheet.getCell('C6'), renangRevenue);
+  setAmountCell(worksheet.getCell('C7'), gymRevenue);
+  setAmountCell(worksheet.getCell('C8'), otherRevenue);
+  setAmountCell(worksheet.getCell('C9'), totalDailyRevenue);
   worksheet.getCell('B10').value = `MONTH-TO-DATE (DAILY REVENUE ${dateRangeLabel})`;
-  worksheet.getCell('C10').value = monthToDateRevenue;
-  worksheet.getCell('C13').value = monthlyMembershipRevenue;
-  worksheet.getCell('C14').value = normalizedAcademyRevenue;
-  worksheet.getCell('B15').value = `TOTAL MONTHLY MEMBERSHIP REVENUE (${monthlyMembershipLabel})`;
-  worksheet.getCell('C15').value = totalMonthlyMembershipRevenue;
-  worksheet.getCell('C17').value = totalRevenue;
-  worksheet.getCell('C18').value = monthlyTarget > 0 ? totalRevenue / monthlyTarget : null;
-  worksheet.getCell('C18').numFmt = '0.00%';
+  setAmountCell(worksheet.getCell('C10'), monthToDateRevenue);
+  setAmountCell(worksheet.getCell('C13'), membershipLesRenangRevenue);
+  setAmountCell(worksheet.getCell('C14'), membershipRenangRevenue);
+  setAmountCell(worksheet.getCell('C15'), membershipGymClassRevenue);
+  setAmountCell(worksheet.getCell('C16'), membershipGymClassRenangRevenue);
+  setAmountCell(worksheet.getCell('C17'), normalizedAcademyRevenue);
+  worksheet.getCell('B18').value = `TOTAL MONTHLY MEMBERSHIP REVENUE (${monthlyMembershipLabel})`;
+  setAmountCell(worksheet.getCell('C18'), totalMonthlyMembershipRevenue);
+  setAmountCell(worksheet.getCell('C20'), totalRevenue);
+  worksheet.getCell('C21').value = monthlyTarget > 0 ? totalRevenue / monthlyTarget : null;
+  worksheet.getCell('C21').numFmt = '0.00%';
 
   if (monthlyTarget > 0) {
-    worksheet.getCell('D17').value = `*TARGET: ${formatAmount(monthlyTarget)} /MONTH`;
+    worksheet.getCell('D20').value = `*TARGET: ${formatAmount(monthlyTarget)} /MONTH`;
   }
 
   const targetPath = path.join(outputDir, `${outputBaseName}.xlsx`);
@@ -106,6 +124,11 @@ function formatAmount(value) {
     maximumFractionDigits: 0,
     minimumFractionDigits: 0,
   }).format(normalizeNumber(value));
+}
+
+function setAmountCell(cell, value) {
+  cell.value = value == null ? null : value;
+  cell.numFmt = AMOUNT_NUM_FMT;
 }
 
 module.exports = {
