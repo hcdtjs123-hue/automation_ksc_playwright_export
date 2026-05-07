@@ -50,6 +50,7 @@ const CONFIG = {
   accurateUrl: process.env.ACCURATE_URL || 'https://account.accurate.id/?lang=US',
   academyTennisRevenue: parseAmount(process.env.ACCURATE_ACADEMY_TENNIS_REVENUE, 0),
   companyName: process.env.ACCURATE_COMPANY_NAME || 'KSC',
+  productLabel: process.env.ACCURATE_PRODUCT_LABEL || 'Accurate Online',
   sidebarLabel: process.env.ACCURATE_SIDEBAR_LABEL || 'Reports',
   reportListLabel: process.env.ACCURATE_REPORT_LIST_LABEL || 'Report List',
   financialLabel: process.env.ACCURATE_FINANCIAL_LABEL || 'Financial',
@@ -88,6 +89,7 @@ function validateRuntimeConfig() {
   requireEnv('ACCURATE_PASSWORD');
   requireConfigValue('accurateUrl');
   requireConfigValue('companyName');
+  requireConfigValue('productLabel');
   requireConfigValue('sidebarLabel');
   requireConfigValue('reportListLabel');
   requireConfigValue('financialLabel');
@@ -115,6 +117,7 @@ function logStartupConfig() {
     accurateUrl: CONFIG.accurateUrl,
     academyTennisRevenue: CONFIG.academyTennisRevenue,
     companyName: CONFIG.companyName,
+    productLabel: CONFIG.productLabel,
     browserName: CONFIG.browserName,
     browserChannel: CONFIG.browserChannel,
     browserExecutablePath: CONFIG.browserExecutablePath,

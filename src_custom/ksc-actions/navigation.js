@@ -34,7 +34,7 @@ async function clickSidebar(page, label) {
     if (!visible || !box) continue;
 
     await realClick(page, box);
-    await safeWait(page, 2000);
+    await safeWait(page, 500);
     console.log(`Clicked sidebar: ${label}`);
     return;
   }
@@ -42,12 +42,18 @@ async function clickSidebar(page, label) {
   throw new Error(`Sidebar failed: ${label}`);
 }
 
-async function clickTile(ctx, preferredPage, label) {
+async function clickTile(ctx, preferredPage, label, options = {}) {
   requireNonEmptyLabel(label, 'tile');
   console.log('Click tile:', label);
 
+  const presearchTimeout = Number.isFinite(options.presearchTimeout) ? options.presearchTimeout : 5000;
+  const postsearchTimeout = Number.isFinite(options.postsearchTimeout) ? options.postsearchTimeout : 1500;
+  const fallbackVisibleTimeout = Number.isFinite(options.fallbackVisibleTimeout) ? options.fallbackVisibleTimeout : 20000;
+
   let page = await getUsablePage(ctx, preferredPage);
-  page = (await findPageWithText(ctx, label, 5000)) || page;
+  if (presearchTimeout > 0) {
+    page = (await findPageWithText(ctx, label, presearchTimeout)) || page;
+  }
   const exactLabel = new RegExp(`^\\s*${escapeRegExp(label)}\\s*$`);
 
   await waitOverlayGone(page);
@@ -92,13 +98,13 @@ async function clickTile(ctx, preferredPage, label) {
 
   if (!clicked) {
     const el = page.getByText(label, { exact: false }).first();
-    await el.waitFor({ state: 'visible', timeout: 20000 });
+    await el.waitFor({ state: 'visible', timeout: fallbackVisibleTimeout });
 
     const target = el.locator('xpath=../../..').first();
     const box = await target.boundingBox().catch(() => null);
 
     try {
-      await target.click({ timeout: 3000 });
+      await target.click({ timeout: 2000 });
       clicked = true;
     } catch {}
 
@@ -112,7 +118,7 @@ async function clickTile(ctx, preferredPage, label) {
     throw new Error(`Failed clicking tile: ${label}`);
   }
 
-  await safeWait(page, 3000);
+  await safeWait(page, 700);
   await waitOverlayGone(page);
 
   const afterPages = getLivePages(ctx);
@@ -123,12 +129,14 @@ async function clickTile(ctx, preferredPage, label) {
     if (newest && !newest.isClosed()) {
       console.log(`Tile opened new page for: ${label}`);
       await newest.waitForLoadState('domcontentloaded').catch(() => {});
-      await safeWait(newest, 2000);
+      await safeWait(newest, 700);
       return newest;
     }
   }
 
-  const refreshed = (await findPageWithText(ctx, label, 1500)) || (await getUsablePage(ctx, page));
+  const refreshed =
+    (postsearchTimeout > 0 ? await findPageWithText(ctx, label, postsearchTimeout) : null) ||
+    (await getUsablePage(ctx, page));
   console.log(`Tile stayed on same page for: ${label}`);
   return refreshed;
 }
@@ -139,14 +147,30 @@ async function openProfitLossReport(ctx, preferredPage) {
 
 async function openProfitLossMultiPeriodReport(ctx, preferredPage) {
   let app = await resolveWorkspacePage(ctx, preferredPage);
-  await closeCurrentReportTab(app);
-  await safeWait(app, 1500);
 
   try {
-    app = await clickTile(ctx, app, CONFIG.profitLossMultiPeriodLabel);
+    app = await clickTile(ctx, app, CONFIG.profitLossMultiPeriodLabel, {
+      presearchTimeout: 300,
+      postsearchTimeout: 500,
+      fallbackVisibleTimeout: 500,
+    });
+    return getUsablePage(ctx, app);
+  } catch (directError) {
+    console.log('Direct multi period tile click failed quickly, retrying after closing current report...');
+  }
+
+  await closeCurrentReportTab(app, { waitForSettled: false });
+  await safeWait(app, 150);
+
+  try {
+    app = await clickTile(ctx, app, CONFIG.profitLossMultiPeriodLabel, {
+      presearchTimeout: 300,
+      postsearchTimeout: 500,
+      fallbackVisibleTimeout: 1000,
+    });
     return getUsablePage(ctx, app);
   } catch (error) {
-    console.log('Direct multi period tile click failed, retrying via financial report list...');
+    console.log('Retry after close failed, retrying via financial report list...');
     return openFinancialReport(ctx, app, CONFIG.profitLossMultiPeriodLabel);
   }
 }
@@ -162,9 +186,11 @@ async function openFinancialReport(ctx, preferredPage, reportLabel) {
   return getUsablePage(ctx, app);
 }
 
-async function closeCurrentReportTab(page) {
+async function closeCurrentReportTab(page, options = {}) {
   console.log('Closing current report tab...');
   await waitOverlayGone(page);
+
+  const waitForSettled = options.waitForSettled !== false;
 
   const closeLocators = [
     page.locator('button[data-bind*="closeTab"]').first(),
@@ -178,8 +204,10 @@ async function closeCurrentReportTab(page) {
     return;
   }
 
-  await safeWait(page, 1500);
-  await waitOverlayGone(page);
+  if (waitForSettled) {
+    await safeWait(page, 500);
+    await waitOverlayGone(page);
+  }
 }
 
 async function resolveWorkspacePage(ctx, preferredPage) {
