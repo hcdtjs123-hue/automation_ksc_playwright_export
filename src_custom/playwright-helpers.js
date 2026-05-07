@@ -9,9 +9,9 @@ async function realClick(page, box) {
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
   await page.mouse.move(x, y);
-  await safeWait(page, 200);
-  await page.mouse.down();
   await safeWait(page, 100);
+  await page.mouse.down();
+  await safeWait(page, 50);
   await page.mouse.up();
 }
 
@@ -54,7 +54,7 @@ async function findPageWithText(ctx, text, timeout = 15000) {
       } catch {}
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   return null;
@@ -72,7 +72,7 @@ async function clickFirstVisibleLocator(page, locators, label) {
         if (!visible) continue;
 
         await item.scrollIntoViewIfNeeded().catch(() => {});
-        await safeWait(page, 150);
+        await safeWait(page, 75);
 
         try {
           await item.click({ timeout: 2500 });

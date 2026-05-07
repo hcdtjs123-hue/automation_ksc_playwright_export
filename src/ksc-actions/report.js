@@ -38,14 +38,14 @@ async function clickModifyInput(page) {
     throw new Error('Could not click Modify Input button');
   }
 
-  await safeWait(page, 1200);
+  await safeWait(page, 700);
   await page.locator('input[name="startDate"]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
   await page.locator('input[name="endDate"]:visible').first().waitFor({ state: 'visible', timeout: 15000 });
 }
 
 async function waitReportReady(page) {
   await waitOverlayGone(page);
-  await safeWait(page, 2000);
+  await safeWait(page, 1000);
 
   await page
     .waitForFunction(() => {

@@ -67,12 +67,12 @@ const {
     console.log('Multi period job =', multiPeriodJob || 'SKIPPED');
 
     await page.goto(CONFIG.accurateUrl, { waitUntil: 'domcontentloaded' });
-    await safeWait(page, 3000);
+    await safeWait(page, 0);
 
     await fillLogin(page);
 
     await page.getByRole('button', { name: /enter/i }).click();
-    await safeWait(page, 8000);
+    await safeWait(page, 500);
 
     let app = await openCompany(page, ctx);
     console.log('Running report flow...');
@@ -175,12 +175,12 @@ async function runExportJob(app, job, shouldModifyInput, targetDir) {
   await clickShow(app);
   await waitOverlayGone(app);
   await waitReportReady(app);
-  await safeWait(app, 3000);
+  await safeWait(app, 500);
 
   const downloadedFilePath = await clickExportThenExcel(app, job.fileLabel, targetDir);
 
   await waitOverlayGone(app);
-  await safeWait(app, 1500);
+  await safeWait(app, 500);
 
   return downloadedFilePath;
 }
@@ -190,12 +190,12 @@ async function runMultiPeriodExportJob(app, job, targetDir) {
   await clickShow(app);
   await waitOverlayGone(app);
   await waitReportReady(app);
-  await safeWait(app, 3000);
+  await safeWait(app, 500);
 
   const downloadedFilePath = await clickExportThenExcel(app, job.fileLabel, targetDir);
 
   await waitOverlayGone(app);
-  await safeWait(app, 1500);
+  await safeWait(app, 500);
 
   return downloadedFilePath;
 }

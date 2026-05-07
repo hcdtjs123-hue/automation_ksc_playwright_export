@@ -37,7 +37,7 @@ async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.out
   console.log('Export -> Excel');
 
   await waitOverlayGone(page);
-  await safeWait(page, 1500);
+  await safeWait(page, 400);
 
   const fallbackDownloadsDir = path.join(os.homedir(), 'Downloads');
   const downloadsDir = targetDir || CONFIG.outputDir || fallbackDownloadsDir;
@@ -66,9 +66,6 @@ async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.out
     throw new Error('Could not click Export dropdown');
   }
 
-  await safeWait(page, 1200);
-  await waitOverlayGone(page);
-
   const exactExcelMenu = page
     .locator('a[data-bind*="exportReportToXls"]')
     .filter({ hasText: /^\s*Export to Excel\s*$/i });
@@ -85,13 +82,16 @@ async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.out
     page.locator('a:has-text("XLSX")'),
   ];
 
+  await waitOverlayGone(page);
+  await waitAnyVisibleLocator(genericMenuLocators, 2500);
+
   let download = null;
   let excelClicked = false;
 
   if (await exactExcelMenu.first().isVisible().catch(() => false)) {
     const menuItem = exactExcelMenu.first();
     await menuItem.scrollIntoViewIfNeeded().catch(() => {});
-    await safeWait(page, 150);
+    await safeWait(page, 75);
 
     try {
       [download] = await Promise.all([
@@ -126,7 +126,7 @@ async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.out
         if (!visible) continue;
 
         await item.scrollIntoViewIfNeeded().catch(() => {});
-        await safeWait(page, 150);
+        await safeWait(page, 75);
 
         try {
           [download] = await Promise.all([
@@ -167,7 +167,7 @@ async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.out
 
       console.log(`Fallback Excel click at x=${fallbackX}, y=${fallbackY}`);
       await page.mouse.move(fallbackX, fallbackY);
-      await safeWait(page, 150);
+      await safeWait(page, 75);
       await page.mouse.click(fallbackX, fallbackY);
     } else {
       throw new Error('Could not click Export to Excel');
@@ -205,6 +205,23 @@ async function clickExportThenExcel(page, fileLabel = '', targetDir = CONFIG.out
   await download.saveAs(filePath);
   console.log('Saved:', filePath);
   return filePath;
+}
+
+async function waitAnyVisibleLocator(locators, timeoutMs = 2500) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    for (const locator of locators) {
+      const visible = await locator.first().isVisible().catch(() => false);
+      if (visible) {
+        return true;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  return false;
 }
 
 function getUniqueFilePath(dirPath, baseName, ext) {
