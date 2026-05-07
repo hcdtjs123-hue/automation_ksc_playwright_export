@@ -21,6 +21,20 @@ async function clickSidebar(page, label) {
   console.log('Sidebar:', label);
   await waitOverlayGone(page);
 
+  const iconClickResult = await clickFirstVisibleLocator(
+    page,
+    [
+      page.locator('.main-menu-icon.icn-menu-report'),
+      page.locator('.icn-menu-report'),
+    ],
+    'Sidebar report icon'
+  );
+  if (iconClickResult.ok) {
+    await safeWait(page, 0);
+    console.log(`Clicked sidebar by icon: ${label}`);
+    return;
+  }
+
   const node = page.locator(`h3:has-text("${label}")`).first();
   await node.waitFor({ state: 'attached', timeout: 15000 });
 
@@ -49,8 +63,18 @@ async function clickTile(ctx, preferredPage, label, options = {}) {
   const presearchTimeout = Number.isFinite(options.presearchTimeout) ? options.presearchTimeout : 5000;
   const postsearchTimeout = Number.isFinite(options.postsearchTimeout) ? options.postsearchTimeout : 1500;
   const fallbackVisibleTimeout = Number.isFinite(options.fallbackVisibleTimeout) ? options.fallbackVisibleTimeout : 20000;
+  const preferredLocators = Array.isArray(options.preferredLocators) ? options.preferredLocators : [];
 
   let page = await getUsablePage(ctx, preferredPage);
+  if (preferredLocators.length > 0) {
+    const preferredResult = await clickFirstVisibleLocator(page, preferredLocators, `${label} preferred locator`);
+    if (preferredResult.ok) {
+      await safeWait(page, 0);
+      await waitOverlayGone(page);
+      return getUsablePage(ctx, page);
+    }
+  }
+
   if (presearchTimeout > 0) {
     page = (await findPageWithText(ctx, label, presearchTimeout)) || page;
   }
@@ -146,44 +170,75 @@ async function openProfitLossReport(ctx, preferredPage) {
 }
 
 async function openProfitLossMultiPeriodReport(ctx, preferredPage) {
-  let app = await resolveWorkspacePage(ctx, preferredPage);
+  const startedAt = Date.now();
+  let app = await getUsablePage(ctx, preferredPage);
+  console.log(`Multi period context ready in ${Date.now() - startedAt}ms`);
 
   try {
+    console.log(`Multi period direct click attempt started in ${Date.now() - startedAt}ms`);
     app = await clickTile(ctx, app, CONFIG.profitLossMultiPeriodLabel, {
-      presearchTimeout: 300,
+      presearchTimeout: 0,
       postsearchTimeout: 500,
-      fallbackVisibleTimeout: 500,
+      fallbackVisibleTimeout: 200,
+      preferredLocators: [
+        app.locator('[title="Profit/Loss (Multi Period) - Shows monthly Profit Loss for selected period"]'),
+        app.locator('div.report-li[title="Profit/Loss (Multi Period) - Shows monthly Profit Loss for selected period"]'),
+      ],
     });
     return getUsablePage(ctx, app);
   } catch (directError) {
-    console.log('Direct multi period tile click failed quickly, retrying after closing current report...');
+    console.log(`Direct multi period tile click failed in ${Date.now() - startedAt}ms, retrying after closing current report...`);
   }
 
   await closeCurrentReportTab(app, { waitForSettled: false });
-  await safeWait(app, 150);
+  await safeWait(app, 0);
 
   try {
+    console.log(`Multi period retry-after-close started in ${Date.now() - startedAt}ms`);
     app = await clickTile(ctx, app, CONFIG.profitLossMultiPeriodLabel, {
-      presearchTimeout: 300,
+      presearchTimeout: 0,
       postsearchTimeout: 500,
-      fallbackVisibleTimeout: 1000,
+      fallbackVisibleTimeout: 400,
+      preferredLocators: [
+        app.locator('[title="Profit/Loss (Multi Period) - Shows monthly Profit Loss for selected period"]'),
+        app.locator('div.report-li[title="Profit/Loss (Multi Period) - Shows monthly Profit Loss for selected period"]'),
+      ],
     });
     return getUsablePage(ctx, app);
   } catch (error) {
     console.log('Retry after close failed, retrying via financial report list...');
-    return openFinancialReport(ctx, app, CONFIG.profitLossMultiPeriodLabel);
+    return await openFinancialReport(ctx, app, CONFIG.profitLossMultiPeriodLabel);
   }
 }
 
-async function openFinancialReport(ctx, preferredPage, reportLabel) {
+async function openFinancialReport(ctx, preferredPage, reportLabel, options = {}) {
   let app = await resolveWorkspacePage(ctx, preferredPage);
 
   await clickSidebar(app, CONFIG.sidebarLabel);
-  app = await clickTile(ctx, app, CONFIG.reportListLabel);
-  app = await clickTile(ctx, app, CONFIG.financialLabel);
-  app = await clickTile(ctx, app, reportLabel);
+  app = await clickTile(ctx, app, CONFIG.reportListLabel, options.reportListOptions || {});
+  app = await clickTile(ctx, app, CONFIG.financialLabel, options.financialOptions || {});
+  app = await clickTile(ctx, app, reportLabel, {
+    ...getReportTileOptions(app, reportLabel),
+    ...(options.reportOptions || {}),
+  });
 
   return getUsablePage(ctx, app);
+}
+
+function getReportTileOptions(page, reportLabel) {
+  if (reportLabel !== CONFIG.profitLossMultiPeriodLabel) {
+    return {};
+  }
+
+  return {
+    presearchTimeout: 0,
+    postsearchTimeout: 500,
+    fallbackVisibleTimeout: 400,
+    preferredLocators: [
+      page.locator('[title="Profit/Loss (Multi Period) - Shows monthly Profit Loss for selected period"]'),
+      page.locator('div.report-li[title="Profit/Loss (Multi Period) - Shows monthly Profit Loss for selected period"]'),
+    ],
+  };
 }
 
 async function closeCurrentReportTab(page, options = {}) {
@@ -198,7 +253,12 @@ async function closeCurrentReportTab(page, options = {}) {
     page.locator('i.icon-cancel-2').locator('xpath=ancestor::button[1]').first(),
   ];
 
-  const closeResult = await clickFirstVisibleLocator(page, closeLocators, 'Close report tab button');
+  const closeResult = await clickFirstVisibleLocator(page, closeLocators, 'Close report tab button', {
+    beforeClickWaitMs: 0,
+    clickTimeout: 1000,
+    noWaitAfter: true,
+    captureBoxAfterClick: false,
+  });
   if (!closeResult.ok) {
     console.log('No current report tab to close, continuing...');
     return;

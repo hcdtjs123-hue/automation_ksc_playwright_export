@@ -1,8 +1,8 @@
 {
   "exportPlan": [
     { "type": "daily", "date": "25/04/2026" },
-    { "type": "monthly", "startDate": "01/04/2026", "endDate": "30/04/2026" },
-    { "type": "yearly", "startDate": "01/01/2026", "endDate": "30/04/2026" }
+    { "type": "monthly", "startDate": "01/04/2026", "endDate": "25/04/2026" },
+    { "type": "yearly", "startDate": "01/01/2026", "endDate": "25/04/2026" }
   ],
   "multiPeriod": {
     "fromMonth": "May",

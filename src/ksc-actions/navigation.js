@@ -21,6 +21,20 @@ async function clickSidebar(page, label) {
   console.log('Sidebar:', label);
   await waitOverlayGone(page);
 
+  const iconClickResult = await clickFirstVisibleLocator(
+    page,
+    [
+      page.locator('.main-menu-icon.icn-menu-report'),
+      page.locator('.icn-menu-report'),
+    ],
+    'Sidebar report icon'
+  );
+  if (iconClickResult.ok) {
+    await safeWait(page, 0);
+    console.log(`Clicked sidebar by icon: ${label}`);
+    return;
+  }
+
   const node = page.locator(`h3:has-text("${label}")`).first();
   await node.waitFor({ state: 'attached', timeout: 15000 });
 
@@ -34,7 +48,7 @@ async function clickSidebar(page, label) {
     if (!visible || !box) continue;
 
     await realClick(page, box);
-    await safeWait(page, 500);
+    await safeWait(page, 0);
     console.log(`Clicked sidebar: ${label}`);
     return;
   }

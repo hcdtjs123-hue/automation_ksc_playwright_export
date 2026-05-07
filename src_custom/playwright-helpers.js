@@ -9,9 +9,9 @@ async function realClick(page, box) {
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
   await page.mouse.move(x, y);
-  await safeWait(page, 100);
+  await safeWait(page, 0);
   await page.mouse.down();
-  await safeWait(page, 50);
+  await safeWait(page, 0);
   await page.mouse.up();
 }
 
@@ -60,25 +60,60 @@ async function findPageWithText(ctx, text, timeout = 15000) {
   return null;
 }
 
-async function clickFirstVisibleLocator(page, locators, label) {
+async function clickFirstVisibleLocator(page, locators, label, options = {}) {
+  const startedAt = Date.now();
+  const beforeClickWaitMs = Number.isFinite(options.beforeClickWaitMs) ? options.beforeClickWaitMs : 0;
+  const clickTimeout = Number.isFinite(options.clickTimeout) ? options.clickTimeout : 2000;
+  const noWaitAfter = options.noWaitAfter === true;
+  const captureBoxAfterClick = options.captureBoxAfterClick !== false;
+
   for (const locator of locators) {
     try {
+      const firstItem = locator.first();
+      const firstVisible = await firstItem.isVisible().catch(() => false);
+      if (firstVisible) {
+        console.log(`${label} ready for action in ${Date.now() - startedAt}ms`);
+        await safeWait(page, beforeClickWaitMs);
+
+        try {
+          await firstItem.click({ timeout: clickTimeout, noWaitAfter });
+          console.log(`${label} clicked by locator`);
+          return {
+            ok: true,
+            box: captureBoxAfterClick ? await firstItem.boundingBox().catch(() => null) : null,
+          };
+        } catch {
+          await firstItem.scrollIntoViewIfNeeded().catch(() => {});
+          const firstBox = await firstItem.boundingBox().catch(() => null);
+          if (firstBox) {
+            await realClick(page, firstBox);
+            console.log(`${label} clicked by realClick`);
+            return { ok: true, box: firstBox };
+          }
+        }
+      }
+
       const count = await locator.count().catch(() => 0);
       if (!count) continue;
 
       for (let i = 0; i < count; i += 1) {
+        if (i === 0 && firstVisible) continue;
         const item = locator.nth(i);
         const visible = await item.isVisible().catch(() => false);
         if (!visible) continue;
 
-        await item.scrollIntoViewIfNeeded().catch(() => {});
-        await safeWait(page, 75);
+        console.log(`${label} ready for action in ${Date.now() - startedAt}ms`);
+        await safeWait(page, beforeClickWaitMs);
 
         try {
-          await item.click({ timeout: 2500 });
+          await item.click({ timeout: clickTimeout, noWaitAfter });
           console.log(`${label} clicked by locator`);
-          return { ok: true, box: await item.boundingBox().catch(() => null) };
+          return {
+            ok: true,
+            box: captureBoxAfterClick ? await item.boundingBox().catch(() => null) : null,
+          };
         } catch {
+          await item.scrollIntoViewIfNeeded().catch(() => {});
           const box = await item.boundingBox().catch(() => null);
           if (box) {
             await realClick(page, box);
