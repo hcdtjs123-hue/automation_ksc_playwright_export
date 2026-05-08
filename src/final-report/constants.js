@@ -33,9 +33,19 @@ const MULTI_PERIOD_ACCOUNTS = [
 
 const PENDAPATAN_ROWS = [
   { row: 4, section: '1. Tennis', description: 'Tennis AYO Payment', accounts: ['Pendapatan - Tennis - AYO Payment'] },
-  { row: 5, section: '', description: 'Tennis Manual Payment', accounts: ['Pendapatan - Tennis Manual Payment'] },
+  {
+    row: 5,
+    section: '',
+    description: 'Tennis Manual Payment',
+    accounts: ['Pendapatan - Tennis Manual Payment', 'Pendapatan - Tennis - Manual Payment'],
+  },
   { row: 6, section: 'Total Tennis', description: '', totalOfRows: [4, 5] },
-  { row: 7, section: '2. Padel', description: 'Padel - AYO Payment', accounts: ['Pendapatan - Padel - AYO Payment'] },
+  {
+    row: 7,
+    section: '2. Padel',
+    description: 'Padel Payment',
+    accounts: ['Pendapatan - Padel - AYO Payment', 'Pendapatan - Padel - Manual Payment'],
+  },
   { row: 8, section: 'Total Padel', description: '', totalOfRows: [7] },
   {
     row: 9,
@@ -57,8 +67,12 @@ const PENDAPATAN_ROWS = [
   {
     row: 16,
     section: '',
-    description: 'Lainnya (Merchandise, sewa raket, etc)',
-    accounts: ['Pendapatan - Lainnya (Merchandise, sewa raket, etc)'],
+    description: 'Lainnya (Merchandise, sewa raket, membership tennis, uang pangkal, etc)',
+    accounts: [
+      'Pendapatan - Lainnya (Merchandise, sewa raket, etc)',
+      'Pendapatan - Membership Tennis',
+      'Pendapatan - Uang Pangkal',
+    ],
   },
   {
     row: 17,

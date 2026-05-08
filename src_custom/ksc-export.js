@@ -108,7 +108,6 @@ const {
     let finalSummaryPaths = [];
     if (summaryInputs && multiPeriodResult) {
       const summaryReportResult = await buildPendapatanSummaryReports({
-        academyTennisRevenue: CONFIG.academyTennisRevenue,
         dailyResult: summaryInputs.dailyResult,
         mtdResult: summaryInputs.monthlyResult,
         ytdResult: summaryInputs.yearlyResult,

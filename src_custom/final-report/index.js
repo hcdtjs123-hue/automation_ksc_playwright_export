@@ -52,7 +52,6 @@ async function buildPendapatanSummaryReport({
 }
 
 async function buildPendapatanSummaryReports({
-  academyTennisRevenue,
   dailyResult,
   mtdResult,
   multiPeriodResult,
@@ -79,7 +78,6 @@ async function buildPendapatanSummaryReports({
   paths.push(v3Path);
 
   const v4Path = await buildPendapatanSummaryReportV4({
-    academyTennisRevenue,
     companyName,
     dailyResult,
     mtdResult,

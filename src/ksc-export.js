@@ -103,7 +103,6 @@ const {
 
     if (dailyResult && mtdResult && ytdResult && multiPeriodResult) {
       const summaryReportResult = await buildPendapatanSummaryReports({
-        academyTennisRevenue: CONFIG.academyTennisRevenue,
         dailyResult,
         mtdResult,
         ytdResult,

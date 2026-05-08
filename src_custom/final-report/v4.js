@@ -16,22 +16,35 @@ const TEMPLATE_V4_PATH = path.join(__dirname, '..', '..', 'contoh', '20260414 - 
 const AMOUNT_NUM_FMT = '#,##0.00';
 
 const DAILY_MATCHERS = {
-  tennis: ['Pendapatan - Tennis - AYO Payment', 'Tennis - AYO'],
-  padel: ['Pendapatan - Padel - AYO Payment', 'Padel - AYO'],
+  tennis: [
+    'Pendapatan - Tennis - AYO Payment',
+    'Pendapatan - Tennis - Manual Payment',
+    'Tennis - AYO',
+  ],
+  padel: ['Pendapatan - Padel - AYO Payment', 'Pendapatan - Padel - Manual Payment', 'Padel - AYO'],
   renang: ['Pendapatan - Kolam Renang (Voucher per Visit)', 'Kolam Renang'],
   gym: ['Pendapatan - All Club (Voucher per Visit)', 'all club'],
   others: ['Pendapatan - Lainnya (Merchandise, sewa raket, etc)', 'Lainnya'],
 };
+
+const MTD_DAILY_REVENUE_MATCHERS = [
+  ...DAILY_MATCHERS.tennis,
+  ...DAILY_MATCHERS.padel,
+  ...DAILY_MATCHERS.renang,
+  ...DAILY_MATCHERS.gym,
+  ...DAILY_MATCHERS.others,
+  'Pendapatan - Membership Tennis',
+];
 
 const MONTHLY_MEMBERSHIP_MATCHERS = {
   lesRenang: ['Pendapatan - Membership Les Renang'],
   renang: ['Pendapatan - Membership Renang'],
   gymClass: ['Pendapatan - Membership Gym Class'],
   gymClassRenang: ['Pendapatan - Membership Gym Class & Renang'],
+  uangPangkal: ['Pendapatan - Uang Pangkal'],
 };
 
 async function buildPendapatanSummaryReportV4({
-  academyTennisRevenue,
   companyName,
   dailyResult,
   mtdResult,
@@ -59,27 +72,19 @@ async function buildPendapatanSummaryReportV4({
   const otherRevenue = sumMatchingAccounts(dailyValues, DAILY_MATCHERS.others);
   const totalDailyRevenue = tennisRevenue + padelRevenue + renangRevenue + gymRevenue + otherRevenue;
   const monthToDateRevenue = normalizeNumber(
-    mtdResult?.job?.startDate && mtdResult?.job?.endDate
-      ? sumMatchingAccounts(monthlyValues, [
-          ...DAILY_MATCHERS.tennis,
-          ...DAILY_MATCHERS.padel,
-          ...DAILY_MATCHERS.renang,
-          ...DAILY_MATCHERS.gym,
-          ...DAILY_MATCHERS.others,
-        ])
-      : 0
+    mtdResult?.job?.startDate && mtdResult?.job?.endDate ? sumMatchingAccounts(monthlyValues, MTD_DAILY_REVENUE_MATCHERS) : 0
   );
   const membershipLesRenangRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.lesRenang);
   const membershipRenangRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.renang);
   const membershipGymClassRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.gymClass);
   const membershipGymClassRenangRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.gymClassRenang);
+  const uangPangkalRevenue = sumAccounts(monthlyValues, MONTHLY_MEMBERSHIP_MATCHERS.uangPangkal);
   const monthlyMembershipRevenue =
     membershipLesRenangRevenue +
     membershipRenangRevenue +
     membershipGymClassRevenue +
     membershipGymClassRenangRevenue;
-  const normalizedAcademyRevenue = normalizeNumber(academyTennisRevenue);
-  const totalMonthlyMembershipRevenue = monthlyMembershipRevenue + normalizedAcademyRevenue;
+  const totalMonthlyMembershipRevenue = monthlyMembershipRevenue + uangPangkalRevenue;
   const totalRevenue = monthToDateRevenue + totalMonthlyMembershipRevenue;
 
   worksheet.getCell('B3').value = `REVENUE ${String(companyName || 'KSC').trim()} DAILY: ${buildSnapshotLabel(
@@ -97,7 +102,7 @@ async function buildPendapatanSummaryReportV4({
   setAmountCell(worksheet.getCell('C14'), membershipRenangRevenue);
   setAmountCell(worksheet.getCell('C15'), membershipGymClassRevenue);
   setAmountCell(worksheet.getCell('C16'), membershipGymClassRenangRevenue);
-  setAmountCell(worksheet.getCell('C17'), normalizedAcademyRevenue);
+  setAmountCell(worksheet.getCell('C17'), uangPangkalRevenue);
   worksheet.getCell('B18').value = `TOTAL MONTHLY MEMBERSHIP REVENUE (${monthlyMembershipLabel})`;
   setAmountCell(worksheet.getCell('C18'), totalMonthlyMembershipRevenue);
   setAmountCell(worksheet.getCell('C20'), totalRevenue);
